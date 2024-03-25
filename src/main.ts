@@ -14,10 +14,8 @@ async function bootstrap() {
     helmet(),
   );
 
-  // TODO à modifier en PROD
   app.enableCors({
     origin: '*',
-    exposedHeaders: ['content-disposition'],
   });
   app.useGlobalPipes(
     new ValidationPipe({

@@ -8,6 +8,7 @@ import { APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
 import { LoggerInterceptor } from './core/interceptor/logger.interceptor';
 import { DataSource } from 'typeorm';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { ZonesModule } from './zones/zones.module';
 
 @Module({
   imports: [
@@ -44,11 +45,8 @@ import { TypeOrmModule } from '@nestjs/typeorm';
             }
             : {},
       }),
-      dataSourceFactory: async (options) => {
-        const dataSource = await new DataSource(options).initialize();
-        await dataSource.synchronize();
-        await dataSource.runMigrations();
-        return dataSource;
+      dataSourceFactory: (options) => {
+        return new DataSource(options).initialize();
       },
     }),
     // Rate limit, 300 requêtes maximum toutes les 15min par IP
@@ -59,7 +57,8 @@ import { TypeOrmModule } from '@nestjs/typeorm';
       },
     ]),
     LoggerModule,
-    SubscriptionsModule
+    SubscriptionsModule,
+    ZonesModule
   ],
   controllers: [AppController],
   providers: [
