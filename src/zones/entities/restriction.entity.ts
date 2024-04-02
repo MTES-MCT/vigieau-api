@@ -9,13 +9,14 @@ import {
   PrimaryGeneratedColumn,
   Unique,
 } from 'typeorm';
-import { ZoneAlerte } from './zone_alerte.entity';
+import { ZoneAlerteComputed } from './zone_alerte_computed.entity';
 import { Usage } from './usage.entity';
 import { Commune } from './commune.entity';
 import { ArreteRestriction } from './arrete_restriction.entity';
+import { ArreteCadre } from './arrete_cadre.entity';
 
 @Entity()
-@Unique(['arreteRestriction', 'zoneAlerte'])
+@Unique(['arreteRestriction'])
 export class Restriction extends BaseEntity {
   @PrimaryGeneratedColumn()
   id: number;
@@ -30,8 +31,11 @@ export class Restriction extends BaseEntity {
   )
   arreteRestriction: ArreteRestriction;
 
-  @ManyToOne(() => ZoneAlerte, (zoneAlerte) => zoneAlerte.restrictions)
-  zoneAlerte: ZoneAlerte;
+  @OneToMany(() => ZoneAlerteComputed, (zoneAlerteComputed) => zoneAlerteComputed.restriction)
+  zonesAlerteComputed: ZoneAlerteComputed[];
+
+  @ManyToOne(() => ArreteCadre, (arreteCadre) => arreteCadre.restrictions)
+  arreteCadre: ArreteCadre;
 
   @Column('enum', {
     name: 'niveauGravite',

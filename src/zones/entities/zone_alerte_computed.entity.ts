@@ -2,15 +2,16 @@ import {
   BaseEntity,
   Column,
   CreateDateColumn,
-  Entity, ManyToMany, OneToMany,
+  Entity, ManyToMany, ManyToOne, OneToMany,
   Polygon,
   PrimaryGeneratedColumn, UpdateDateColumn,
 } from 'typeorm';
 import { Restriction } from './restriction.entity';
 import { ArreteCadre } from './arrete_cadre.entity';
+import { NiveauGravite } from '../type/niveau_gravite.type';
 
 @Entity()
-export class ZoneAlerte extends BaseEntity {
+export class ZoneAlerteComputed extends BaseEntity {
   @PrimaryGeneratedColumn()
   id: number;
 
@@ -21,13 +22,7 @@ export class ZoneAlerte extends BaseEntity {
   code: string;
 
   @Column({ nullable: false, length: 50 })
-  type: 'SOU' | 'SUP';
-
-  @Column({ nullable: false })
-  numeroVersion: number;
-
-  @Column({ nullable: true })
-  numeroVersionSandre: number;
+  type: 'SOU' | 'SUP' | 'AEP';
 
   @Column({
     type: 'geometry',
@@ -36,20 +31,24 @@ export class ZoneAlerte extends BaseEntity {
   })
   geom: Polygon;
 
-  @Column({ nullable: false, default: false })
-  disabled: boolean;
+  @Column('enum', {
+    name: 'niveauGravite',
+    enum: ['vigilance', 'alerte', 'alerte_renforcee', 'crise'],
+    nullable: true,
+  })
+  niveauGravite: NiveauGravite;
 
   // @ManyToOne(() => Departement, (departement) => departement.zonesAlerte)
   // departement: Departement;
   //
   // @ManyToOne(() => BassinVersant, (bassinVersant) => bassinVersant.zonesAlerte)
   // bassinVersant: BassinVersant;
-  //
-  @ManyToMany(() => ArreteCadre, (arreteCadre) => arreteCadre.zonesAlerte)
-  arretesCadre: ArreteCadre[];
 
-  @OneToMany(() => Restriction, (restriction) => restriction.zoneAlerte)
-  restrictions: Restriction[];
+  // @ManyToMany(() => ArreteCadre, (arreteCadre) => arreteCadre.zonesAlerte)
+  // arretesCadre: ArreteCadre[];
+
+  @ManyToOne(() => Restriction, (restriction) => restriction.zonesAlerteComputed)
+  restriction: Restriction;
 
   @CreateDateColumn()
   createdAt: Date;

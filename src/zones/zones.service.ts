@@ -1,18 +1,18 @@
 import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { ZoneAlerte } from './entities/zone_alerte.entity';
 import { Repository } from 'typeorm';
 import computeBbox from '@turf/bbox';
 import { VigieauLogger } from '../logger/vigieau.logger';
 import { Commune } from './entities/commune.entity';
 import booleanPointInPolygon from '@turf/boolean-point-in-polygon';
 import { keyBy, max } from 'lodash';
+import { ZoneAlerteComputed } from './entities/zone_alerte_computed.entity';
 
 @Injectable()
 export class ZonesService {
   private readonly logger = new VigieauLogger('ZonesService');
 
-  allZones: ZoneAlerte[] = [];
+  allZonesWithRestrictions: any[] = [];
   zonesFeatures: any = [];
   zonesIndex: any;
   zonesCommunesIndex: any = {};
@@ -22,14 +22,14 @@ export class ZonesService {
   zoneTree;
   communeTree;
 
-  constructor(@InjectRepository(ZoneAlerte)
-              private readonly zoneAlerteRepository: Repository<ZoneAlerte>,
+  constructor(@InjectRepository(ZoneAlerteComputed)
+              private readonly zoneAlerteComputedRepository: Repository<ZoneAlerteComputed>,
               @InjectRepository(Commune)
               private readonly communeRepository: Repository<Commune>) {
     this.loadAllZones();
   }
 
-  find(queryLon?: string, queryLat?: string, commune?: string) {
+  find(queryLon?: string, queryLat?: string, commune?: string, profil?: string, zoneType?: string) {
     if (queryLon && queryLat) {
       const lon = Number.parseFloat(queryLon);
       const lat = Number.parseFloat(queryLat);
@@ -41,7 +41,8 @@ export class ZonesService {
         );
       }
 
-      return this.searchZonesByLonLat({ lon, lat });
+      const zones = this.searchZonesByLonLat({ lon, lat });
+      return this.formatZones(zones, profil, zoneType);
     }
 
     if (commune) {
@@ -54,7 +55,7 @@ export class ZonesService {
         );
       }
 
-      return zones;
+      return this.formatZones(zones, profil, zoneType);
     }
 
     throw new HttpException(
@@ -64,7 +65,7 @@ export class ZonesService {
   }
 
   async findOne(id: string) {
-    const z = this.allZones.find(zone => zone.id === +id);
+    const z = this.allZonesWithRestrictions.find(zone => zone.id === +id);
     if (z) {
       return z;
     }
@@ -80,18 +81,13 @@ export class ZonesService {
       .map(idx => this.zonesFeatures[idx])
       .filter(feature => booleanPointInPolygon([lon, lat], feature))
       .map(feature => this.zonesIndex[feature.properties.idZone]);
-    const communes = this.communeTree.search(lon, lat, lon, lat)
-      .map(idx => this.communesFeatures[idx])
-      .filter(feature => booleanPointInPolygon([lon, lat], feature))
-      .map(feature => this.communesIndex[feature.properties.idCommune]);
 
     const sup = zones.filter(z => z.type === 'SUP');
     const sou = zones.filter(z => z.type === 'SOU');
+    const aep = zones.filter(z => z.type === 'AEP');
 
-    let restrictions = this.formatRestrictions(zones, communes);
-
-    if (sup.length <= 1 && sou.length <= 1 && communes.length <= 1) {
-      return restrictions;
+    if (sup.length <= 1 && sou.length <= 1 && aep.length <= 1) {
+      return zones;
     }
 
     if (!allowMultiple) {
@@ -101,7 +97,7 @@ export class ZonesService {
       );
     }
 
-    return restrictions;
+    return zones;
   }
 
   searchZonesByCommune(commune, allowMultiple = false) {
@@ -113,8 +109,9 @@ export class ZonesService {
 
     const sup = zones.filter(z => z.type === 'SUP');
     const sou = zones.filter(z => z.type === 'SOU');
+    const aep = zones.filter(z => z.type === 'AEP');
 
-    if (sup.length <= 1 && sou.length <= 1) {
+    if (sup.length <= 1 && sou.length <= 1 && aep.length <= 1) {
       return zones;
     }
 
@@ -128,58 +125,45 @@ export class ZonesService {
     return zones;
   }
 
-  formatRestrictions(zones, communes) {
-    let restrictions = zones.map(
-      z => z.restrictions.map(r => {
-        r.type = z.type;
-        return r;
-      }),
-    ).flat()
-      .concat(communes.map(
-        c => c.restrictions.map(r => {
-          r.type = 'AEP';
-          return r;
-        }),
-      ).flat());
-    // remove empty values
-    return restrictions.filter(r => r);
-  }
-
   async loadAllZones() {
     this.logger.log('LOADING ALL ZONES & COMMUNES - BEGIN');
     // @ts-ignore
     const Flatbush = (await import('flatbush')).default;
 
-    const zones = await this.zoneAlerteRepository
-      .createQueryBuilder('zone_alerte')
-      .select('zone_alerte.id', 'id')
-      .addSelect('zone_alerte.code', 'code')
-      .addSelect('zone_alerte.nom', 'nom')
-      .addSelect('zone_alerte.type', 'type')
+    const zonesWithRestrictions = await this.zoneAlerteComputedRepository
+      .createQueryBuilder('zone_alerte_computed')
+      .select('zone_alerte_computed.id', 'id')
+      .addSelect('zone_alerte_computed.code', 'code')
+      .addSelect('zone_alerte_computed.nom', 'nom')
+      .addSelect('zone_alerte_computed.type', 'type')
       .addSelect(
-        'ST_AsGeoJSON(ST_TRANSFORM(zone_alerte.geom, 4326))',
+        'ST_AsGeoJSON(ST_TRANSFORM(zone_alerte_computed.geom, 4326))',
         'geom',
       )
-      .where('zone_alerte.disabled = false')
       .getRawMany();
 
-    await Promise.all(zones.map(async (zone) => {
-      const z = await this.zoneAlerteRepository.findOne({
+    await Promise.all(zonesWithRestrictions.map(async (zone) => {
+      const z = await this.zoneAlerteComputedRepository.findOne({
         where: {
           id: zone.id,
-          restrictions: {
+          restriction: {
             arreteRestriction: {
               statut: 'publie',
             },
           },
         },
         relations: [
-          'restrictions',
-          'restrictions.arreteRestriction',
-          'restrictions.usages',
+          'restriction',
+          'restriction.arreteRestriction',
+          'restriction.arreteRestriction.fichier',
+          'restriction.arreteRestriction.departement',
+          'restriction.arreteCadre',
+          'restriction.arreteCadre.fichier',
+          'restriction.usages',
+          'restriction.usages.thematique',
         ],
       });
-      zone.restrictions = z ? z.restrictions : [];
+      zone.restriction = z ? z.restriction : [];
       return zone;
     }));
 
@@ -193,36 +177,69 @@ export class ZonesService {
         'geom',
       )
       .where('commune.disabled = false')
+      .andWhere('ST_INTERSECTS(commune.geom, (select ST_UNION(z.geom) from zone_alerte_computed as z))')
       .getRawMany();
 
-    await Promise.all(communes.map(async (commune) => {
-      const c = await this.communeRepository.findOne({
-        where: {
-          id: commune.id,
-          restrictions: {
-            arreteRestriction: {
-              statut: 'publie',
-            },
-          },
-        },
-        relations: [
-          'restrictions',
-          'restrictions.arreteRestriction',
-          'restrictions.usages',
-        ],
+    this.allZonesWithRestrictions = zonesWithRestrictions.map(z => {
+      const usages = z.restriction?.usages?.filter(u => {
+        if (z.type === 'SUP') {
+          return u.concerneEsu;
+        } else if (z.type === 'SOU') {
+          return u.concerneEso;
+        } else if (z.type === 'AEP') {
+          return u.concerneAep;
+        }
+        return true;
       });
-      commune.restrictions = c ? c.restrictions : [];
-      return commune;
-    }));
-
-    this.allZones = zones;
+      return {
+        id: z.id,
+        code: z.code,
+        nom: z.nom,
+        type: z.type,
+        departement: z.restriction?.arreteRestriction?.departement?.code,
+        niveauGravite: z.restriction?.niveauGravite,
+        arrete: {
+          id: z.restriction?.arreteRestriction?.id,
+          dateDebutValidite: z.restriction?.arreteRestriction?.dateDebut,
+          dateFinValidite: z.restriction?.arreteRestriction?.dateFin,
+          cheminFichier: z.restriction?.arreteRestriction?.fichier?.url,
+          cheminFichierArreteCadre: z.restriction?.arreteCadre?.fichier?.url,
+        },
+        usages: usages?.map(u => {
+          let description = '';
+          switch (z.restriction?.niveauGravite) {
+            case 'vigilance':
+              description = u.descriptionVigilance;
+              break;
+            case 'alerte':
+              description = u.descriptionAlerte;
+              break;
+            case 'alerte_renforcee':
+              description = u.descriptionAlerteRenforcee;
+              break;
+            case 'crise':
+              description = u.descriptionCrise;
+              break;
+          }
+          return {
+            nom: u.nom,
+            thematique: u.thematique.nom,
+            description: description,
+            concerneParticulier: u.concerneParticulier,
+            concerneEntreprise: u.concerneEntreprise,
+            concerneCollectivite: u.concerneCollectivite,
+            concerneExploitation: u.concerneExploitation,
+          };
+        }),
+      };
+    });
     this.allCommunes = communes;
 
 
-    this.logger.log(`LOADING ALL ZONES & COMMUNES - COMPUTING ${zones.length} zones and ${communes.length} communes`);
-    this.zoneTree = new Flatbush(zones.length);
-    for (const zone of zones) {
-      const geojson = JSON.parse(zone.geom);
+    this.logger.log(`LOADING ALL ZONES & COMMUNES - COMPUTING ${zonesWithRestrictions.length} zones and ${communes.length} communes`);
+    this.zoneTree = new Flatbush(this.allZonesWithRestrictions.length);
+    for (const zone of this.allZonesWithRestrictions) {
+      const geojson = JSON.parse(zonesWithRestrictions.find(z => z.id === zone.id).geom);
       geojson.properties = {
         idZone: zone.id,
         code: zone.code,
@@ -233,7 +250,7 @@ export class ZonesService {
       this.zonesFeatures.push(geojson);
       this.zoneTree.add(...bbox);
     }
-    this.zonesIndex = keyBy(zones, 'id');
+    this.zonesIndex = keyBy(this.allZonesWithRestrictions, 'id');
     this.zoneTree.finish();
 
     this.communeTree = new Flatbush(communes.length);
@@ -252,5 +269,31 @@ export class ZonesService {
     this.communeTree.finish();
 
     this.logger.log('LOADING ALL ZONES & COMMUNES - END');
+  }
+
+  formatZones(zones: any[], profil?: string, zoneType?: string) {
+    if (profil) {
+      zones.forEach(z => {
+        z.usages = z.usages.filter(u => {
+          if (profil === 'particulier') {
+            return u.concerneParticulier;
+          } else if (profil === 'entreprise') {
+            return u.concerneEntreprise;
+          } else if (profil === 'exploitation') {
+            return u.concerneExploitation;
+          } else if (profil === 'collectivite') {
+            return u.concerneCollectivite;
+          } else {
+            return false;
+          }
+        });
+      });
+    }
+
+    if (zoneType) {
+      return zones.find(z => z.type === zoneType);
+    }
+
+    return zones;
   }
 }

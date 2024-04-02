@@ -14,8 +14,8 @@ import {
 } from 'typeorm';
 import { Fichier } from './fichier.entity';
 import { ArreteRestriction } from './arrete_restriction.entity';
-import { ZoneAlerte } from './zone_alerte.entity';
 import { Usage } from './usage.entity';
+import { Restriction } from './restriction.entity';
 
 @Entity()
 export class ArreteCadre extends BaseEntity {
@@ -78,11 +78,11 @@ export class ArreteCadre extends BaseEntity {
   // })
   // departements: Departement[];
 
-  @ManyToMany(() => ZoneAlerte, (zoneAlerte) => zoneAlerte.arretesCadre)
-  @JoinTable({
-    name: 'arrete_cadre_zone_alerte',
-  })
-  zonesAlerte: ZoneAlerte[];
+  // @ManyToMany(() => ZoneAlerte, (zoneAlerte) => zoneAlerte.arretesCadre)
+  // @JoinTable({
+  //   name: 'arrete_cadre_zone_alerte',
+  // })
+  // zonesAlerte: ZoneAlerte[];
 
   @OneToMany(
     () => Usage,
@@ -96,6 +96,9 @@ export class ArreteCadre extends BaseEntity {
 
   @OneToMany(() => ArreteCadre, (arreteCadre) => arreteCadre.arreteCadreAbroge)
   arretesCadre: ArreteCadre[];
+
+  @OneToMany(() => Restriction, (restriction) => restriction.arreteCadre)
+  restrictions: Restriction[];
 
   @CreateDateColumn({ select: false, type: 'timestamp' })
   created_at: number;

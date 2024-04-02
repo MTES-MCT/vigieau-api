@@ -14,6 +14,7 @@ import {
 import { Fichier } from './fichier.entity';
 import { Restriction } from './restriction.entity';
 import { ArreteCadre } from './arrete_cadre.entity';
+import { Departement } from './departement.entity';
 
 @Entity()
 export class ArreteRestriction extends BaseEntity {
@@ -54,8 +55,8 @@ export class ArreteRestriction extends BaseEntity {
   // })
   // ressourceEapCommunique: RessourceEapCommunique;
 
-  // @ManyToOne(() => Departement, (departement) => departement.arretesRestriction)
-  // departement: Departement;
+  @ManyToOne(() => Departement, (departement) => departement.arretesRestriction)
+  departement: Departement;
 
   @ManyToMany(
     () => ArreteCadre,
