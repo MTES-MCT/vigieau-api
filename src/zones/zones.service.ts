@@ -5,8 +5,9 @@ import computeBbox from '@turf/bbox';
 import { VigieauLogger } from '../logger/vigieau.logger';
 import { Commune } from './entities/commune.entity';
 import booleanPointInPolygon from '@turf/boolean-point-in-polygon';
-import { keyBy, max } from 'lodash';
+import { keyBy } from 'lodash';
 import { ZoneAlerteComputed } from './entities/zone_alerte_computed.entity';
+import { DepartementsService } from '../departements/departements.service';
 
 @Injectable()
 export class ZonesService {
@@ -25,7 +26,8 @@ export class ZonesService {
   constructor(@InjectRepository(ZoneAlerteComputed)
               private readonly zoneAlerteComputedRepository: Repository<ZoneAlerteComputed>,
               @InjectRepository(Commune)
-              private readonly communeRepository: Repository<Commune>) {
+              private readonly communeRepository: Repository<Commune>,
+              private readonly departementsService: DepartementsService) {
     this.loadAllZones();
   }
 
@@ -245,6 +247,7 @@ export class ZonesService {
         code: zone.code,
         nom: zone.nom,
         type: zone.type,
+        niveauGravite: zone.niveauGravite
       };
       const bbox = computeBbox(geojson);
       this.zonesFeatures.push(geojson);
@@ -269,6 +272,7 @@ export class ZonesService {
     this.communeTree.finish();
 
     this.logger.log('LOADING ALL ZONES & COMMUNES - END');
+    this.departementsService.computeSituation(this.allZonesWithRestrictions);
   }
 
   formatZones(zones: any[], profil?: string, zoneType?: string) {

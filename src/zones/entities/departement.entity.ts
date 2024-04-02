@@ -10,6 +10,7 @@ import {
   PrimaryGeneratedColumn,
 } from 'typeorm';
 import { ArreteRestriction } from './arrete_restriction.entity';
+import { Region } from './region.entity';
 
 @Entity()
 export class Departement extends BaseEntity {
@@ -29,8 +30,8 @@ export class Departement extends BaseEntity {
   })
   geom: Polygon;
 
-  // @ManyToOne(() => Region, (region) => region.departements)
-  // region: Region;
+  @ManyToOne(() => Region, (region) => region.departements)
+  region: Region;
 
   // @OneToMany(() => Commune, (communes) => communes.departement)
   // communes: Commune[];

@@ -9,6 +9,7 @@ import { LoggerInterceptor } from './core/interceptor/logger.interceptor';
 import { DataSource } from 'typeorm';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ZonesModule } from './zones/zones.module';
+import { DepartementsModule } from './departements/departements.module';
 
 @Module({
   imports: [
@@ -58,7 +59,8 @@ import { ZonesModule } from './zones/zones.module';
     ]),
     LoggerModule,
     SubscriptionsModule,
-    ZonesModule
+    ZonesModule,
+    DepartementsModule
   ],
   controllers: [AppController],
   providers: [

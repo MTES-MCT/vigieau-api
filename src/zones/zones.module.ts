@@ -10,10 +10,12 @@ import { ArreteRestriction } from './entities/arrete_restriction.entity';
 import { ArreteCadre } from './entities/arrete_cadre.entity';
 import { Fichier } from './entities/fichier.entity';
 import { ZoneAlerteComputed } from './entities/zone_alerte_computed.entity';
+import { DepartementsModule } from '../departements/departements.module';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([ZoneAlerteComputed, Commune, Restriction, Usage, Thematique, ArreteRestriction, ArreteCadre, Fichier]),
+    DepartementsModule,
   ],
   controllers: [ZonesController],
   providers: [ZonesService],
