@@ -17,11 +17,7 @@ export class ZonesService {
   zonesFeatures: any = [];
   zonesIndex: any;
   zonesCommunesIndex: any = {};
-  allCommunes: Commune[] = [];
-  communesFeatures: any = [];
-  communesIndex: any;
   zoneTree;
-  communeTree;
 
   constructor(@InjectRepository(ZoneAlerteComputed)
               private readonly zoneAlerteComputedRepository: Repository<ZoneAlerteComputed>,
@@ -169,18 +165,18 @@ export class ZonesService {
       return zone;
     }));
 
-    const communes = await this.communeRepository
-      .createQueryBuilder('commune')
-      .select('commune.id', 'id')
-      .addSelect('commune.code', 'code')
-      .addSelect('commune.nom', 'nom')
-      .addSelect(
-        'ST_AsGeoJSON(ST_TRANSFORM(commune.geom, 4326))',
-        'geom',
-      )
-      .where('commune.disabled = false')
-      .andWhere('ST_INTERSECTS(commune.geom, (select ST_UNION(z.geom) from zone_alerte_computed as z))')
-      .getRawMany();
+    await Promise.all(zonesWithRestrictions.map(async (zone) => {
+      const z = await this.zoneAlerteComputedRepository.findOne({
+        where: {
+          id: zone.id,
+        },
+        relations: [
+          'communes',
+        ],
+      });
+      zone.communes = z ? z.communes : [];
+      return zone;
+    }));
 
     this.allZonesWithRestrictions = zonesWithRestrictions.map(z => {
       const usages = z.restriction?.usages?.filter(u => {
@@ -235,13 +231,13 @@ export class ZonesService {
         }),
       };
     });
-    this.allCommunes = communes;
 
 
-    this.logger.log(`LOADING ALL ZONES & COMMUNES - COMPUTING ${zonesWithRestrictions.length} zones and ${communes.length} communes`);
+    this.logger.log(`LOADING ALL ZONES & COMMUNES - COMPUTING ${zonesWithRestrictions.length} zones`);
     this.zoneTree = new Flatbush(this.allZonesWithRestrictions.length);
     for (const zone of this.allZonesWithRestrictions) {
-      const geojson = JSON.parse(zonesWithRestrictions.find(z => z.id === zone.id).geom);
+      const fullZone = zonesWithRestrictions.find(z => z.id === zone.id)
+      const geojson = JSON.parse(fullZone.geom);
       geojson.properties = {
         idZone: zone.id,
         code: zone.code,
@@ -252,24 +248,17 @@ export class ZonesService {
       const bbox = computeBbox(geojson);
       this.zonesFeatures.push(geojson);
       this.zoneTree.add(...bbox);
+
+      for (const commune of fullZone.communes) {
+        if (!this.zonesCommunesIndex[commune.code]) {
+          this.zonesCommunesIndex[commune.code] = []
+        }
+
+        this.zonesCommunesIndex[commune.code].push(zone)
+      }
     }
     this.zonesIndex = keyBy(this.allZonesWithRestrictions, 'id');
     this.zoneTree.finish();
-
-    this.communeTree = new Flatbush(communes.length);
-    for (const commune of communes) {
-      const geojson = JSON.parse(commune.geom);
-      geojson.properties = {
-        idCommune: commune.id,
-        code: commune.code,
-        nom: commune.nom,
-      };
-      const bbox = computeBbox(geojson);
-      this.communesFeatures.push(geojson);
-      this.communeTree.add(...bbox);
-    }
-    this.communesIndex = keyBy(communes, 'id');
-    this.communeTree.finish();
 
     this.logger.log('LOADING ALL ZONES & COMMUNES - END');
     this.departementsService.computeSituation(this.allZonesWithRestrictions);

@@ -8,6 +8,7 @@ import {
   PrimaryGeneratedColumn,
 } from 'typeorm';
 import { Restriction } from './restriction.entity';
+import { ZoneAlerteComputed } from './zone_alerte_computed.entity';
 
 @Entity()
 export class Commune extends BaseEntity {
@@ -34,6 +35,11 @@ export class Commune extends BaseEntity {
     persistence: false,
   })
   restrictions: Restriction[];
+
+  @ManyToMany(() => ZoneAlerteComputed, (zoneAlerteComputed) => zoneAlerteComputed.communes, {
+    persistence: false,
+  })
+  zonesAlerteComputed: ZoneAlerteComputed[];
 
   @Column({ nullable: false, default: false })
   disabled: boolean;
