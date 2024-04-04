@@ -10,6 +10,7 @@ import { DataSource } from 'typeorm';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ZonesModule } from './zones/zones.module';
 import { DepartementsModule } from './departements/departements.module';
+import { ScheduleModule } from '@nestjs/schedule';
 
 @Module({
   imports: [
@@ -60,7 +61,8 @@ import { DepartementsModule } from './departements/departements.module';
     LoggerModule,
     SubscriptionsModule,
     ZonesModule,
-    DepartementsModule
+    DepartementsModule,
+    ScheduleModule.forRoot()
   ],
   controllers: [AppController],
   providers: [

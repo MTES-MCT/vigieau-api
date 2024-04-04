@@ -1,6 +1,6 @@
 import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { MoreThan, Repository } from 'typeorm';
 import computeBbox from '@turf/bbox';
 import { VigieauLogger } from '../logger/vigieau.logger';
 import { Commune } from './entities/commune.entity';
@@ -8,6 +8,7 @@ import booleanPointInPolygon from '@turf/boolean-point-in-polygon';
 import { keyBy } from 'lodash';
 import { ZoneAlerteComputed } from './entities/zone_alerte_computed.entity';
 import { DepartementsService } from '../departements/departements.service';
+import { Cron, CronExpression } from '@nestjs/schedule';
 
 @Injectable()
 export class ZonesService {
@@ -15,9 +16,10 @@ export class ZonesService {
 
   allZonesWithRestrictions: any[] = [];
   zonesFeatures: any = [];
-  zonesIndex: any;
+  zonesIndex: any = {};
   zonesCommunesIndex: any = {};
   zoneTree;
+  lastUpdate = null;
 
   constructor(@InjectRepository(ZoneAlerteComputed)
               private readonly zoneAlerteComputedRepository: Repository<ZoneAlerteComputed>,
@@ -139,6 +141,7 @@ export class ZonesService {
         'geom',
       )
       .getRawMany();
+    this.lastUpdate = new Date();
 
     await Promise.all(zonesWithRestrictions.map(async (zone) => {
       const z = await this.zoneAlerteComputedRepository.findOne({
@@ -235,15 +238,18 @@ export class ZonesService {
 
     this.logger.log(`LOADING ALL ZONES & COMMUNES - COMPUTING ${zonesWithRestrictions.length} zones`);
     this.zoneTree = new Flatbush(this.allZonesWithRestrictions.length);
+    this.zonesFeatures = [];
+    this.zonesCommunesIndex = {};
+    this.zonesIndex = {};
     for (const zone of this.allZonesWithRestrictions) {
-      const fullZone = zonesWithRestrictions.find(z => z.id === zone.id)
+      const fullZone = zonesWithRestrictions.find(z => z.id === zone.id);
       const geojson = JSON.parse(fullZone.geom);
       geojson.properties = {
         idZone: zone.id,
         code: zone.code,
         nom: zone.nom,
         type: zone.type,
-        niveauGravite: zone.niveauGravite
+        niveauGravite: zone.niveauGravite,
       };
       const bbox = computeBbox(geojson);
       this.zonesFeatures.push(geojson);
@@ -251,10 +257,10 @@ export class ZonesService {
 
       for (const commune of fullZone.communes) {
         if (!this.zonesCommunesIndex[commune.code]) {
-          this.zonesCommunesIndex[commune.code] = []
+          this.zonesCommunesIndex[commune.code] = [];
         }
 
-        this.zonesCommunesIndex[commune.code].push(zone)
+        this.zonesCommunesIndex[commune.code].push(zone);
       }
     }
     this.zonesIndex = keyBy(this.allZonesWithRestrictions, 'id');
@@ -289,4 +295,22 @@ export class ZonesService {
 
     return zones;
   }
+
+  /**
+   * Vérification régulière s'il n'y a pas de nouvelles zones
+   */
+  @Cron(CronExpression.EVERY_30_SECONDS)
+  async updateZones() {
+    if (!this.lastUpdate) {
+      return;
+    }
+    const count = await this.zoneAlerteComputedRepository
+      .createQueryBuilder('zone_alerte_computed')
+      .where('"updatedAt" > :lastUpdate', { lastUpdate: this.lastUpdate })
+      .getCount();
+    if(count > 0) {
+      this.loadAllZones();
+    }
+  }
+
 }
