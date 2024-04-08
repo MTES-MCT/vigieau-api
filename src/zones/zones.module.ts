@@ -14,11 +14,12 @@ import { DepartementsModule } from '../departements/departements.module';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([ZoneAlerteComputed, Commune, Restriction, Usage, Thematique, ArreteRestriction, ArreteCadre, Fichier]),
+    TypeOrmModule.forFeature([ZoneAlerteComputed, Restriction, Usage, Thematique, ArreteRestriction, ArreteCadre, Fichier]),
     DepartementsModule,
   ],
   controllers: [ZonesController],
   providers: [ZonesService],
+  exports: [ZonesService],
 })
 export class ZonesModule {
 }

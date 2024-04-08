@@ -4,7 +4,7 @@ import {
   IsEmail,
   IsIn,
   IsInt,
-  IsNotEmpty,
+  IsNotEmpty, IsNumber, IsOptional,
   IsString,
   Length,
   Max,
@@ -45,6 +45,7 @@ export class CreateSubscriptionDto {
 
   @IsString()
   @Length(5)
+  @IsOptional()
   @ApiProperty({
     example: '69001',
     description: 'Code postal de la commune',
@@ -52,24 +53,27 @@ export class CreateSubscriptionDto {
   commune: string;
 
   @IsString()
+  @IsOptional()
   @ApiProperty({
     example: 'x',
     description: 'Identifiant de l\'adresse',
   })
   idAdresse: string;
 
-  @IsInt()
+  @IsNumber()
   @Min(-180)
   @Max(180)
+  @IsOptional()
   @ApiProperty({
     example: '180',
     description: 'Longitude',
   })
   lon: number;
 
-  @IsInt()
+  @IsNumber()
   @Min(-90)
   @Max(90)
+  @IsOptional()
   @ApiProperty({
     example: '90',
     description: 'Latitude',

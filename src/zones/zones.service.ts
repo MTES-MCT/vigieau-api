@@ -1,9 +1,8 @@
 import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { MoreThan, Repository } from 'typeorm';
+import { Repository } from 'typeorm';
 import computeBbox from '@turf/bbox';
 import { VigieauLogger } from '../logger/vigieau.logger';
-import { Commune } from './entities/commune.entity';
 import booleanPointInPolygon from '@turf/boolean-point-in-polygon';
 import { keyBy } from 'lodash';
 import { ZoneAlerteComputed } from './entities/zone_alerte_computed.entity';
@@ -23,8 +22,6 @@ export class ZonesService {
 
   constructor(@InjectRepository(ZoneAlerteComputed)
               private readonly zoneAlerteComputedRepository: Repository<ZoneAlerteComputed>,
-              @InjectRepository(Commune)
-              private readonly communeRepository: Repository<Commune>,
               private readonly departementsService: DepartementsService) {
     this.loadAllZones();
   }
