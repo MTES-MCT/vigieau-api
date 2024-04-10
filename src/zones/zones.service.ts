@@ -19,6 +19,7 @@ export class ZonesService {
   zonesCommunesIndex: any = {};
   zoneTree;
   lastUpdate = null;
+  loading = false;
 
   constructor(@InjectRepository(ZoneAlerteComputed)
               private readonly zoneAlerteComputedRepository: Repository<ZoneAlerteComputed>,
@@ -124,6 +125,7 @@ export class ZonesService {
 
   async loadAllZones() {
     this.logger.log('LOADING ALL ZONES & COMMUNES - BEGIN');
+    this.loading = true;
     // @ts-ignore
     const Flatbush = (await import('flatbush')).default;
 
@@ -139,6 +141,7 @@ export class ZonesService {
       )
       .getRawMany();
     this.lastUpdate = new Date();
+    this.loading = false;
 
     await Promise.all(zonesWithRestrictions.map(async (zone) => {
       const z = await this.zoneAlerteComputedRepository.findOne({
@@ -296,14 +299,15 @@ export class ZonesService {
   /**
    * Vérification régulière s'il n'y a pas de nouvelles zones
    */
-  @Cron(CronExpression.EVERY_30_SECONDS)
+  @Cron(CronExpression.EVERY_10_SECONDS)
   async updateZones() {
-    if (!this.lastUpdate) {
+    if (!this.lastUpdate && !this.loading) {
       return;
     }
     const count = await this.zoneAlerteComputedRepository
       .createQueryBuilder('zone_alerte_computed')
-      .where('"updatedAt" > :lastUpdate', { lastUpdate: this.lastUpdate })
+      .where('enabled = true')
+      .andWhere('"updatedAt" > :lastUpdate', { lastUpdate: this.lastUpdate })
       .getCount();
     if(count > 0) {
       this.loadAllZones();

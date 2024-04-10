@@ -7,7 +7,6 @@ import {
   PrimaryGeneratedColumn, UpdateDateColumn,
 } from 'typeorm';
 import { Restriction } from './restriction.entity';
-import { ArreteCadre } from './arrete_cadre.entity';
 import { NiveauGravite } from '../type/niveau_gravite.type';
 import { Commune } from './commune.entity';
 
@@ -24,6 +23,9 @@ export class ZoneAlerteComputed extends BaseEntity {
 
   @Column({ nullable: false, length: 50 })
   type: 'SOU' | 'SUP' | 'AEP';
+
+  @Column({ default: false })
+  enabled: boolean;
 
   @Column({
     type: 'geometry',
