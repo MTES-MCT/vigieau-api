@@ -8,9 +8,13 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { AbonnementMail } from '../zones/entities/abonnement_mail.entity';
 import { firstValueFrom } from 'rxjs';
+import { Cron, CronExpression } from '@nestjs/schedule';
+import { VigieauLogger } from '../logger/vigieau.logger';
 
 @Injectable()
 export class SubscriptionsService {
+  private readonly logger = new VigieauLogger('SubscriptionsService');
+
   constructor(@InjectRepository(AbonnementMail)
               private readonly abonnementMailRepository: Repository<AbonnementMail>,
               private readonly communesService: CommunesService,
@@ -163,5 +167,54 @@ export class SubscriptionsService {
     }
 
     return result;
+  }
+
+  getSubscriptionsByEmail(email: string) {
+    return this.abonnementMailRepository.find({
+      select: {
+        id: true,
+        email: true,
+        profil: true,
+        typesEau: true,
+        libelleLocalisation: true,
+        // @ts-ignore
+        situation: true,
+      },
+      where: { email },
+    });
+  }
+
+  deleteSubscriptionById(id: string, email: string) {
+    return this.abonnementMailRepository.delete({ id: +id, email: email });
+  }
+
+  deleteSubscriptionByEmail(email: string) {
+    return this.abonnementMailRepository.delete({ email: email });
+  }
+
+  @Cron(CronExpression.EVERY_DAY_AT_5PM)
+  async updateSituations() {
+    const stats = {
+      Aucun: 0,
+      Vigilance: 0,
+      Alerte: 0,
+      'Alerte renforcée': 0,
+      Crise: 0,
+      'Pas de changement': 0,
+      'En erreur': 0,
+    };
+
+    const subscriptions = await this.abonnementMailRepository.find();
+    subscriptions.forEach((subscription) => {
+      let situationUpdated = false;
+      try {
+        // @ts-ignore
+        const {AEP, SOU, SUP} = this.computeNiveauxAlerte(subscription)
+
+      } catch (error) {
+        stats['En erreur']++;
+        this.logger.error('MISE A JOUR SITUATION', error);
+      }
+    });
   }
 }

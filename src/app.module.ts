@@ -11,6 +11,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { ZonesModule } from './zones/zones.module';
 import { DepartementsModule } from './departements/departements.module';
 import { ScheduleModule } from '@nestjs/schedule';
+import AuthModule from './auth/auth.module';
 
 @Module({
   imports: [
@@ -62,7 +63,8 @@ import { ScheduleModule } from '@nestjs/schedule';
     SubscriptionsModule,
     ZonesModule,
     DepartementsModule,
-    ScheduleModule.forRoot()
+    ScheduleModule.forRoot(),
+    AuthModule
   ],
   controllers: [AppController],
   providers: [
