@@ -30,7 +30,7 @@ export class SubscriptionsController {
   @Get('')
   @ApiOperation({ summary: "Retourne les abonnements d'un utilisateur" })
   getAll(@Req() req) {
-    return this.subscriptionsService.getSubscriptionsByEmail(req.auth.email);
+    return this.subscriptionsService.getSubscriptionsByEmail(req.user.email);
   }
 
   @UseGuards(JwtGuard)
@@ -38,7 +38,7 @@ export class SubscriptionsController {
   @HttpCode(204)
   @ApiOperation({ summary: "Suppression d'un abonnement" })
   remove(@Req() req, @Param('id') id: string) {
-    return this.subscriptionsService.deleteSubscriptionById(id, req.auth.email)
+    return this.subscriptionsService.deleteSubscriptionById(id, req.user.email)
   }
 
   @UseGuards(JwtGuard)
@@ -46,6 +46,6 @@ export class SubscriptionsController {
   @HttpCode(204)
   @ApiOperation({ summary: "Suppression de tout les abonnements d'un utilisateur" })
   removeAll(@Req() req) {
-    return this.subscriptionsService.deleteSubscriptionByEmail(req.auth.email)
+    return this.subscriptionsService.deleteSubscriptionByEmail(req.user.email)
   }
 }
