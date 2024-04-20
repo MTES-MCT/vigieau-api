@@ -10,6 +10,8 @@ import { AbonnementMail } from '../zones/entities/abonnement_mail.entity';
 import { firstValueFrom } from 'rxjs';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { VigieauLogger } from '../logger/vigieau.logger';
+import { BrevoService } from '../brevo/brevo.service';
+import { MattermostService } from '../mattermost/mattermost.service';
 
 @Injectable()
 export class SubscriptionsService {
@@ -19,13 +21,14 @@ export class SubscriptionsService {
               private readonly abonnementMailRepository: Repository<AbonnementMail>,
               private readonly communesService: CommunesService,
               private readonly httpService: HttpService,
-              private readonly zonesService: ZonesService) {
+              private readonly zonesService: ZonesService,
+              private readonly brevoService: BrevoService,
+              private readonly mattermostService: MattermostService) {
   }
 
   async create(createSubscriptionDto: CreateSubscriptionDto, req: any): Promise<any> {
     const subscription = <any>createSubscriptionDto;
     subscription.ip = req.ip;
-    subscription.typesEau = subscription.typesZones;
 
     if (subscription.commune) {
       const commune = this.communesService.getCommune(subscription.commune);
@@ -144,7 +147,7 @@ export class SubscriptionsService {
         result.SUP = sup.niveauGravite;
         result.zones.push(sup.idZone);
       } else {
-        result.SUP = null;
+        result.SUP = 'Aucun';
       }
     }
 
@@ -153,7 +156,7 @@ export class SubscriptionsService {
         result.SOU = sou.niveauGravite;
         result.zones.push(sou.idZone);
       } else {
-        result.SOU = null;
+        result.SOU = 'Aucun';
       }
     }
 
@@ -162,7 +165,7 @@ export class SubscriptionsService {
         result.AEP = aep.niveauGravite;
         result.zones.push(aep.idZone);
       } else {
-        result.AEP = null;
+        result.AEP = 'Aucun';
       }
     }
 
@@ -196,25 +199,107 @@ export class SubscriptionsService {
   async updateSituations() {
     const stats = {
       Aucun: 0,
-      Vigilance: 0,
-      Alerte: 0,
-      'Alerte renforcée': 0,
-      Crise: 0,
+      vigilance: 0,
+      alerte: 0,
+      alerte_renforcee: 0,
+      crise: 0,
       'Pas de changement': 0,
       'En erreur': 0,
     };
 
     const subscriptions = await this.abonnementMailRepository.find();
-    subscriptions.forEach((subscription) => {
+    for(const subscription of subscriptions) {
       let situationUpdated = false;
       try {
         // @ts-ignore
-        const {AEP, SOU, SUP} = this.computeNiveauxAlerte(subscription)
+        const {AEP, SOU, SUP} = this.computeNiveauxAlerte(subscription);
 
+        if (AEP && subscription?.situation?.AEP !== AEP) {
+          stats[AEP]++;
+
+          await this.brevoService.sendSituationUpdate(
+            subscription.email,
+            AEP,
+            subscription.commune,
+            subscription.libelleLocalisation
+          );
+
+          situationUpdated = true;
+        }
+
+        if (SOU && subscription?.situation?.SOU !== SOU) {
+          stats[SOU]++;
+
+          await this.brevoService.sendSituationUpdate(
+            subscription.email,
+            SOU,
+            subscription.commune,
+            subscription.libelleLocalisation
+          );
+
+          situationUpdated = true;
+        }
+
+        if (SUP && subscription?.situation?.SUP !== SUP) {
+          stats[SUP]++;
+
+          await this.brevoService.sendSituationUpdate(
+            subscription.email,
+            SUP,
+            subscription.commune,
+            subscription.libelleLocalisation
+          );
+
+          situationUpdated = true;
+        }
+
+        if (situationUpdated) {
+          await this.abonnementMailRepository.update(
+            {id: subscription.id},
+            {situation: {AEP, SOU, SUP}}
+          )
+        } else {
+          stats['Pas de changement']++
+        }
       } catch (error) {
         stats['En erreur']++;
         this.logger.error('MISE A JOUR SITUATION', error);
       }
-    });
+    }
+    await this.sendMattermostNotification(stats);
+  }
+
+  async sendMattermostNotification(stats) {
+    const sentences = []
+    if (stats.Aucun) {
+      sentences.push(`- **${stats.Aucun}** usagers n’ont plus de restrictions 🚰`)
+    }
+
+    if (stats.vigilance) {
+      sentences.push(`- **${stats.Vigilance}** usagers sont passés en **Vigilance** 💧`)
+    }
+
+    if (stats.alerte) {
+      sentences.push(`- **${stats.Alerte}** usagers sont passés en **Alerte** 😬`)
+    }
+
+    if (stats.alerte_renforcee) {
+      sentences.push(`- **${stats['Alerte renforcée']}** usagers sont passés en **Alerte renforcée** 🥵`)
+    }
+
+    if (stats.crise) {
+      sentences.push(`- **${stats.Crise}** usagers sont passés en **Crise** 🔥`)
+    }
+
+    if (stats['Pas de changement']) {
+      sentences.push(`- **${stats['Pas de changement']}** usagers n’ont pas de changement 👻`)
+    }
+
+    if (stats['En erreur']) {
+      sentences.push(`- **${stats['En erreur']}** usagers sont en erreur 🧨`)
+    }
+
+    const message = sentences.join('\n');
+    this.mattermostService.sendMessage(message);
   }
 }

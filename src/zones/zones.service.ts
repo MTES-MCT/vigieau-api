@@ -1,6 +1,6 @@
 import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { MoreThan, Repository } from 'typeorm';
 import computeBbox from '@turf/bbox';
 import { VigieauLogger } from '../logger/vigieau.logger';
 import booleanPointInPolygon from '@turf/boolean-point-in-polygon';
@@ -265,6 +265,7 @@ export class ZonesService {
       this.zonesIndex = keyBy(this.allZonesWithRestrictions, 'id');
       this.zoneTree.finish();
 
+      this.loading = false;
       this.logger.log('LOADING ALL ZONES & COMMUNES - END');
       this.departementsService.computeSituation(this.allZonesWithRestrictions);
     } catch (e) {
@@ -309,12 +310,15 @@ export class ZonesService {
     }
     const count = await this.zoneAlerteComputedRepository
       .createQueryBuilder('zone_alerte_computed')
-      .where('enabled = true')
-      .andWhere('"updatedAt" > :lastUpdate', { lastUpdate: this.lastUpdate })
+      .where({
+        enabled: true,
+      })
+      .andWhere({
+        updatedAt: MoreThan(this.lastUpdate.toLocaleString('sv')),
+      })
       .getCount();
     if(count > 0) {
       this.loadAllZones();
     }
   }
-
 }

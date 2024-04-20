@@ -38,10 +38,10 @@ export class CreateSubscriptionDto {
   @ApiProperty({
     example: 'particulier',
     enum: ['SUP', 'SOU', 'AEP'],
-    description: 'Type de zones',
+    description: 'Type d\'eau',
     type: [String]
   })
-  typesZones: string[];
+  typesEau: string[];
 
   @IsString()
   @Length(5)

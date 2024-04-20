@@ -6,6 +6,8 @@ import { HttpModule } from '@nestjs/axios';
 import { ZonesModule } from '../zones/zones.module';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { AbonnementMail } from '../zones/entities/abonnement_mail.entity';
+import { BrevoModule } from '../brevo/brevo.module';
+import { MattermostModule } from '../mattermost/mattermost.module';
 
 @Module({
   imports: [
@@ -13,6 +15,8 @@ import { AbonnementMail } from '../zones/entities/abonnement_mail.entity';
     CommunesModule,
     HttpModule,
     ZonesModule,
+    BrevoModule,
+    MattermostModule
   ],
   controllers: [SubscriptionsController],
   providers: [SubscriptionsService],
