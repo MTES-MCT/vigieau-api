@@ -124,7 +124,7 @@ export class StatisticsService {
       restrictionsSearch = restrictionsSearch?.find(matomoEvent => matomoEvent.label === 'CODE INSEE')?.nb_events;
       let oldRestrictionsSearch = oldRestrictionsSearchsByDay.data[day];
       oldRestrictionsSearch = oldRestrictionsSearch?.find(matomoEvent => matomoEvent.label === 'CODE INSEE')?.nb_events;
-      stat.restrictionsSearch = (restrictionsSearch ?? 0) + (oldRestrictionsSearch ?? 0);
+      stat.restrictionsSearch = (+restrictionsSearch ?? 0) + (+oldRestrictionsSearch ?? 0);
 
       let arreteDownloads = 0;
       if (arreteDownloadsByDay.data[day] && arreteDownloadsByDay.data[day][0]?.nb_events) {
