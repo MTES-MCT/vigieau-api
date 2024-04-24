@@ -15,6 +15,20 @@ export class DepartementsService {
               private readonly departementRepository: Repository<Departement>) {
   }
 
+  getAllLight() {
+    return this.departementRepository.find({
+      select: {
+        id: true,
+        code: true,
+        region: {
+          id: true,
+          code: true,
+        }
+      },
+      relations: ['region']
+    })
+  }
+
   situationByDepartement(): any {
     return this.situationDepartements;
   }

@@ -20,6 +20,7 @@ import { MattermostModule } from '../mattermost/mattermost.module';
   ],
   controllers: [SubscriptionsController],
   providers: [SubscriptionsService],
+  exports: [SubscriptionsService],
 })
 export class SubscriptionsModule {
 }

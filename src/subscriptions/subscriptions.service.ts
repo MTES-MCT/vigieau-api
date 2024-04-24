@@ -26,6 +26,12 @@ export class SubscriptionsService {
               private readonly mattermostService: MattermostService) {
   }
 
+  getAllLight() {
+    return this.abonnementMailRepository.find({
+      select: ['id', 'email', 'createdAt'],
+    });
+  }
+
   async create(createSubscriptionDto: CreateSubscriptionDto, req: any): Promise<any> {
     const subscription = <any>createSubscriptionDto;
     subscription.ip = req.ip;
