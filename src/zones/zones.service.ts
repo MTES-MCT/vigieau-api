@@ -135,6 +135,7 @@ export class ZonesService {
         .addSelect('zone_alerte_computed.code', 'code')
         .addSelect('zone_alerte_computed.nom', 'nom')
         .addSelect('zone_alerte_computed.type', 'type')
+        .addSelect('zone_alerte_computed.niveauGravite', 'niveauGravite')
         .addSelect(
           'ST_AsGeoJSON(ST_TRANSFORM(zone_alerte_computed.geom, 4326))',
           'geom',
@@ -196,8 +197,8 @@ export class ZonesService {
           code: z.code,
           nom: z.nom,
           type: z.type,
+          niveauGravite: z.niveauGravite,
           departement: z.restriction?.arreteRestriction?.departement?.code,
-          niveauGravite: z.restriction?.niveauGravite,
           arrete: {
             id: z.restriction?.arreteRestriction?.id,
             dateDebutValidite: z.restriction?.arreteRestriction?.dateDebut,
@@ -207,7 +208,7 @@ export class ZonesService {
           },
           usages: usages?.map(u => {
             let description = '';
-            switch (z.restriction?.niveauGravite) {
+            switch (z.niveauGravite) {
               case 'vigilance':
                 description = u.descriptionVigilance;
                 break;
