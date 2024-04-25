@@ -8,9 +8,11 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { IsNull, Not, Repository } from 'typeorm';
 import { Statistic } from './entities/statistic.entity';
 import { Cron, CronExpression } from '@nestjs/schedule';
+import { VigieauLogger } from '../logger/vigieau.logger';
 
 @Injectable()
 export class StatisticsService {
+  private readonly logger = new VigieauLogger('StatisticsService');
 
   statistics: any;
 
@@ -76,6 +78,7 @@ export class StatisticsService {
 
   @Cron(CronExpression.EVERY_3_HOURS)
   async computeStatistics() {
+    this.logger.log('COMPUTE STATISTICS');
     const matomoUrl = `${process.env.MATOMO_URL}/?module=API&token_auth=${process.env.MATOMO_API_KEY}&format=JSON&idSite=${process.env.MATOMO_ID_SITE}&period=day`;
     const oldMatomoUrl = `${process.env.OLD_MATOMO_URL}/?module=API&token_auth=${process.env.OLD_MATOMO_API_KEY}&format=JSON&idSite=${process.env.OLD_MATOMO_ID_SITE}&period=day`;
     const lastStat = await this.statisticRepository.findOne({
@@ -124,7 +127,7 @@ export class StatisticsService {
       restrictionsSearch = restrictionsSearch?.find(matomoEvent => matomoEvent.label === 'CODE INSEE')?.nb_events;
       let oldRestrictionsSearch = oldRestrictionsSearchsByDay.data[day];
       oldRestrictionsSearch = oldRestrictionsSearch?.find(matomoEvent => matomoEvent.label === 'CODE INSEE')?.nb_events;
-      stat.restrictionsSearch = (+restrictionsSearch ?? 0) + (+oldRestrictionsSearch ?? 0);
+      stat.restrictionsSearch = (restrictionsSearch ? +restrictionsSearch : 0) + (oldRestrictionsSearch ? +oldRestrictionsSearch : 0);
 
       let arreteDownloads = 0;
       if (arreteDownloadsByDay.data[day] && arreteDownloadsByDay.data[day][0]?.nb_events) {
