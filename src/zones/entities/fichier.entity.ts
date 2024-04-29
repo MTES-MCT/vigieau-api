@@ -17,7 +17,7 @@ export class Fichier extends BaseEntity {
   @Column({ nullable: false, length: 100 })
   nom: string;
 
-  @Column({ nullable: false, length: 200 })
+  @Column({ nullable: false, length: 255 })
   url: string;
 
   @Column({ nullable: false })
