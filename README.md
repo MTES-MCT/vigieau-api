@@ -1,42 +1,19 @@
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="200" alt="Nest Logo" /></a>
-</p>
+# API Sécheresse
 
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
+API permettent de retourner les restrictions en vigueur en lien avec la politique de préservation de la ressource en eau.
 
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://coveralls.io/github/nestjs/nest?branch=master" target="_blank"><img src="https://coveralls.io/repos/github/nestjs/nest/badge.svg?branch=master#9" alt="Coverage" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
+Elle se base sur les données de VigiEau Admin.
 
-## Description
+## Pré-requis
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
+- Node.js 18.12 ou supérieur
+- Yarn
 
-## Installation
+## Utilisation
 
 ```bash
-$ yarn install
-```
-
-## Running the app
-
-```bash
-# development
-$ yarn run start
+# Installation des dépendances
+yarn
 
 # watch mode
 $ yarn run start:dev
@@ -45,29 +22,124 @@ $ yarn run start:dev
 $ yarn run start:prod
 ```
 
-## Test
+## API
 
-```bash
-# unit tests
-$ yarn run test
+Ce service expose plusieurs points d’entrée d’API dont la liste suivante est publiquement accessible et stabilisée :
 
-# e2e tests
-$ yarn run test:e2e
+### Récupérer la réglementation applicable à une localisation
 
-# test coverage
-$ yarn run test:cov
+La localisation peut se faire à la coordonnée géographique ou au code commune (INSEE).
+
+Pour obtenir des coordonnées à partir d’une adresse ou d’un nom de lieu-dit ou d’une commune, nous recommandons d’utiliser l’[API Adresse](https://adresse.data.gouv.fr/api-doc/adresse).
+
+Pour recherche une commune par auto-complétion ou à partir d’un code postal, nous recommandons d’utiliser l’[API Géo Découpage administratif](https://geo.api.gouv.fr/decoupage-administratif/communes).
+
+`GET /zones`
+
+#### Paramètres de la requête
+
+| Nom du paramètre | Description                                                                                                                                                                                |
+|------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `lon`, `lat`     | Coordonnées WGS-84 du lieu dont on veut récupérer la réglementation applicable (obligatoire si pas de commune)                                                                             |
+| `commune`        | Code INSEE de la commune de rattachement (obligatoire si pas de lon / lat)                                                                                                                 |
+| `profil`         | Catégorie d’usager à prendre en compte pour la liste des restrictions en vigueur (`particulier`, `exploitation`, `collectivite`, `entreprise`). Si non renseigné, renvoie tout les usages. |
+| `zoneType`       | Type d'eau (classé par zone) sur lequel s'applique les restrictions (`SUP`, `SOU`, `AEP`). Si non renseigné, renvoie toutes les zones.                                                     |
+
+#### Exemple de requête
+
+https://api.vigieau.gouv.fr/api/zones?lon=3.16265&lat=43.37829&commune=34148&profil=exploitation&zoneType=SUP
+
+#### Exemple de réponse
+
+```json
+{
+  "id": 2418,
+  "code": "76_34_0011",
+  "nom": "Bassin versant de l'Orb à l'aval de la confluence avec le Jaur jusqu'à l'embouchure hors axe Orb soutenu",
+  "type": "SUP",
+  "niveauGravite": "alerte_renforcee",
+  "departement": "34",
+  "arrete": {
+    "id": 34668,
+    "dateDebutValidite": "2024-04-16",
+    "dateFinValidite": "2024-04-30",
+    "cheminFichier": "https://regleau.s3.gra.perf.cloud.ovh.net/arrete-restriction/34668/AP_DDTM34-2024-04-14827_restriction_eau_secheresse_16-04-2024_AvecAnnexe.pdf",
+    "cheminFichierArreteCadre": "https://regleau.s3.gra.perf.cloud.ovh.net/arrete-cadre/30262/ACD2023_24_Mai_2023_AvecAnnexes.pdf"
+  },
+  "usages": [
+    {
+      "nom": "Remplissage / vidange des plans d'eau",
+      "thematique": "Remplir ou vidanger",
+      "description": "Interdit sauf pour les usages commerciaux après accord du service de police de l’eau.",
+      "concerneParticulier": true,
+      "concerneEntreprise": true,
+      "concerneCollectivite": true,
+      "concerneExploitation": true
+    },
+    {
+      "nom": "Travaux en cours d’eau",
+      "thematique": "Travaux et activités en cours d'eau",
+      "description": "Report des travaux sauf après déclaration au service de police de l’eau pour les cas suivants :\r\n- situation d’assec total;\r\n- pour des raisons de sécurité publique.\r\n\r\nLa réalisation de seuils provisoires est interdite sauf alimentation en eau potable.",
+      "concerneParticulier": true,
+      "concerneEntreprise": true,
+      "concerneCollectivite": true,
+      "concerneExploitation": true
+    },
+    {
+      "nom": "ICPE soumises à un APC relatif à la sécheresse",
+      "thematique": "ICPE",
+      "description": "Application des dispositions spécifiques prévues dans leur arrêté préfectoral ou dans un arrêté ministériel.",
+      "concerneParticulier": false,
+      "concerneEntreprise": true,
+      "concerneCollectivite": true,
+      "concerneExploitation": true
+    },
+    {
+      "nom": "Usage ICPE non soumis à un APC relatif à la sécheresse",
+      "thematique": "ICPE",
+      "description": "Voir détails dans l'arrêté préfectoral.",
+      "concerneParticulier": false,
+      "concerneEntreprise": true,
+      "concerneCollectivite": true,
+      "concerneExploitation": true
+    },
+    {
+      "nom": "Irrigation des cultures par système d’irrigation localisée",
+      "thematique": "Irriguer",
+      "description": "Voir détails dans l'arrêté préfectoral.",
+      "concerneParticulier": false,
+      "concerneEntreprise": false,
+      "concerneCollectivite": false,
+      "concerneExploitation": true
+    },
+    {
+      "nom": "Irrigation par aspersion des cultures",
+      "thematique": "Irriguer",
+      "description": "Voir détails dans l'arrêté préfectoral.",
+      "concerneParticulier": false,
+      "concerneEntreprise": false,
+      "concerneCollectivite": false,
+      "concerneExploitation": true
+    },
+    {
+      "nom": "Nettoyage des façades, toitures, trottoirs et autres surfaces imperméabilisées",
+      "thematique": "Nettoyer",
+      "description": "Interdit sauf impératif sanitaire ou sécuritaire, et réalisé par une collectivité ou une entreprise de\r\nnettoyage professionnel.",
+      "concerneParticulier": true,
+      "concerneEntreprise": true,
+      "concerneCollectivite": true,
+      "concerneExploitation": true
+    }
+  ]
+}
 ```
 
-## Support
+#### Erreurs possibles
 
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
-
-## Stay in touch
-
-- Author - [Kamil Myśliwiec](https://kamilmysliwiec.com)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
-
-## License
-
-Nest is [MIT licensed](LICENSE).
+* `400 La paramètre commune est requis`
+* `400 Commune invalide`
+* `400 Coordonnées non valides`
+* `404 Les données pour ce département ne sont pas disponibles` : Le département n’est pas couvert par VigiEau (certains territoires ultramarins)
+* `404 Aucune zone d’alerte en vigueur pour la requête donnée` : votre préfecture n’a pas défini de zone d’alerte pour cette localisation ou alors vous êtes en limite technique
+* `409 Veuillez renseigner une adresse pour préciser la réglementation applicable` : la commune est traversée par plusieurs zones d’alertes, vous devez préciser la localisation avec `lon`/`lat`
+* `500 Un problème avec les données ne permet pas de répondre à votre demande` : Notre algorithme n’a pas réussi à déterminer la zone d’alerte correspondant à votre situation.
