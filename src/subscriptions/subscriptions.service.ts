@@ -153,7 +153,7 @@ export class SubscriptionsService {
         result.SUP = sup.niveauGravite;
         result.zones.push(sup.idZone);
       } else {
-        result.SUP = 'Aucun';
+        result.SUP = 'pas_restriction';
       }
     }
 
@@ -162,7 +162,7 @@ export class SubscriptionsService {
         result.SOU = sou.niveauGravite;
         result.zones.push(sou.idZone);
       } else {
-        result.SOU = 'Aucun';
+        result.SOU = 'pas_restriction';
       }
     }
 
@@ -171,7 +171,7 @@ export class SubscriptionsService {
         result.AEP = aep.niveauGravite;
         result.zones.push(aep.idZone);
       } else {
-        result.AEP = 'Aucun';
+        result.AEP = 'pas_restriction';
       }
     }
 
@@ -204,18 +204,27 @@ export class SubscriptionsService {
   @Cron(CronExpression.EVERY_DAY_AT_5PM)
   async updateSituations() {
     const stats = {
-      Aucun: 0,
+      pas_restriction: 0,
       vigilance: 0,
       alerte: 0,
       alerte_renforcee: 0,
       crise: 0,
-      'Pas de changement': 0,
-      'En erreur': 0,
+      pas_changement: 0,
+      erreur: 0,
+      nouveau: 0,
     };
 
-    const subscriptions = await this.abonnementMailRepository.find();
+    const subscriptions = await this.abonnementMailRepository.find({
+      select: ['id', 'email', 'commune', 'lon', 'lat', 'typesEau', 'profil', 'libelleLocalisation', 'situation', 'createdAt'],
+    });
     for(const subscription of subscriptions) {
       let situationUpdated = false;
+
+      if(subscription.createdAt &&
+        new Date(subscription.createdAt).getTime() > Date.now() - 24 * 60 * 60 * 1000) {
+        stats.nouveau ++;
+      }
+
       try {
         // @ts-ignore
         const {AEP, SOU, SUP} = this.computeNiveauxAlerte(subscription);
@@ -265,10 +274,10 @@ export class SubscriptionsService {
             {situation: {AEP, SOU, SUP}}
           )
         } else {
-          stats['Pas de changement']++
+          stats.pas_changement++
         }
       } catch (error) {
-        stats['En erreur']++;
+        stats.erreur++;
         this.logger.error('MISE A JOUR SITUATION', error);
       }
     }
@@ -277,32 +286,36 @@ export class SubscriptionsService {
 
   async sendMattermostNotification(stats) {
     const sentences = []
-    if (stats.Aucun) {
-      sentences.push(`- **${stats.Aucun}** usagers n’ont plus de restrictions 🚰`)
+    if (stats.nouveau) {
+      sentences.push(`- **${stats.nouveau}** usagers se sont inscrits au cours des dernières 24h 📧`)
+    }
+
+    if (stats.pas_restriction) {
+      sentences.push(`- **${stats.pas_restriction}** usagers n’ont plus de restrictions 🚰`)
     }
 
     if (stats.vigilance) {
-      sentences.push(`- **${stats.Vigilance}** usagers sont passés en **Vigilance** 💧`)
+      sentences.push(`- **${stats.vigilance}** usagers sont passés en **Vigilance** 💧`)
     }
 
     if (stats.alerte) {
-      sentences.push(`- **${stats.Alerte}** usagers sont passés en **Alerte** 😬`)
+      sentences.push(`- **${stats.alerte}** usagers sont passés en **Alerte** 😬`)
     }
 
     if (stats.alerte_renforcee) {
-      sentences.push(`- **${stats['Alerte renforcée']}** usagers sont passés en **Alerte renforcée** 🥵`)
+      sentences.push(`- **${stats.alerte_renforcee}** usagers sont passés en **Alerte renforcée** 🥵`)
     }
 
     if (stats.crise) {
-      sentences.push(`- **${stats.Crise}** usagers sont passés en **Crise** 🔥`)
+      sentences.push(`- **${stats.crise}** usagers sont passés en **Crise** 🔥`)
     }
 
-    if (stats['Pas de changement']) {
-      sentences.push(`- **${stats['Pas de changement']}** usagers n’ont pas de changement 👻`)
+    if (stats.pas_changement) {
+      sentences.push(`- **${stats.pas_changement}** usagers n’ont pas de changement 👻`)
     }
 
-    if (stats['En erreur']) {
-      sentences.push(`- **${stats['En erreur']}** usagers sont en erreur 🧨`)
+    if (stats.erreur) {
+      sentences.push(`- **${stats.erreur}** usagers sont en erreur 🧨`)
     }
 
     const message = sentences.join('\n');

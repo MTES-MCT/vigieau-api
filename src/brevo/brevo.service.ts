@@ -26,14 +26,14 @@ export class BrevoService {
           address: libelleLocalisation,
           city: this.communesService.getCommune(codeCommune).nom,
           unsubscribeUrl: this.computeUnsubscribeUrl(email),
-          niveaugravite: niveauAlerte
+          niveaugravite: this.getNiveauAlerteFr(niveauAlerte)
         }
       )
     }
   }
 
   getTemplateId(niveauAlerte) {
-    if (niveauAlerte === 'Aucun') {
+    if (niveauAlerte === 'pas_restriction') {
       return 32
     }
 
@@ -42,6 +42,21 @@ export class BrevoService {
     }
 
     return 31
+  }
+
+  getNiveauAlerteFr(niveauAlerte) {
+    switch (niveauAlerte) {
+      case 'pas_restriction':
+        return 'Pas de restrictions';
+      case 'vigilance':
+        return 'Vigilance';
+      case 'alerte':
+        return 'Alerte';
+        case 'alerte_renforcee':
+          return 'Alerte renforcée';
+      case 'crise':
+        return 'Crise';
+    }
   }
 
   computeUnsubscribeUrl(email) {
