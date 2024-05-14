@@ -24,6 +24,8 @@ $ yarn run start:prod
 
 ## API
 
+Documentation OpenAPI disponible ici : https://api.vigieau.beta.gouv.fr/swagger/
+
 Ce service expose plusieurs points d’entrée d’API dont la liste suivante est publiquement accessible et stabilisée :
 
 ### Récupérer la réglementation applicable à une localisation

@@ -1,12 +1,12 @@
 import { Body, Controller, Delete, Get, HttpCode, Param, Post, Req, UseGuards } from '@nestjs/common';
 import { SubscriptionsService } from './subscriptions.service';
-import { ApiOperation, ApiResponse } from '@nestjs/swagger';
+import { ApiExcludeController, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { CreateSubscriptionDto } from './dto/create_subscription.dto';
 import { SubscriptionDto } from './dto/subscription.dto';
-import { plainToInstance } from 'class-transformer';
 import JwtGuard from '../auth/jwt.guard';
 
 @Controller('subscriptions')
+@ApiExcludeController()
 export class SubscriptionsController {
   constructor(private readonly subscriptionsService: SubscriptionsService) {}
 

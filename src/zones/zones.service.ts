@@ -8,12 +8,13 @@ import { keyBy } from 'lodash';
 import { ZoneAlerteComputed } from './entities/zone_alerte_computed.entity';
 import { DepartementsService } from '../departements/departements.service';
 import { Cron, CronExpression } from '@nestjs/schedule';
+import { ZoneDto } from './dto/zone.dto';
 
 @Injectable()
 export class ZonesService {
   private readonly logger = new VigieauLogger('ZonesService');
 
-  allZonesWithRestrictions: any[] = [];
+  allZonesWithRestrictions: ZoneDto[] = [];
   zonesFeatures: any = [];
   zonesIndex: any = {};
   zonesCommunesIndex: any = {};

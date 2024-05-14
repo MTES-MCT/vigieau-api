@@ -5,11 +5,12 @@ import { Departement } from '../zones/entities/departement.entity';
 import { max } from 'lodash';
 import { Utils } from '../core/utils';
 import { VigieauLogger } from '../logger/vigieau.logger';
+import { DepartementDto } from './dto/departement.dto';
 
 @Injectable()
 export class DepartementsService {
   private readonly logger = new VigieauLogger('DepartementsService');
-  situationDepartements = [];
+  situationDepartements: DepartementDto[] = [];
 
   constructor(@InjectRepository(Departement)
               private readonly departementRepository: Repository<Departement>) {
@@ -29,7 +30,7 @@ export class DepartementsService {
     })
   }
 
-  situationByDepartement(): any {
+  situationByDepartement(): DepartementDto[] {
     return this.situationDepartements;
   }
 
