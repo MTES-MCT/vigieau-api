@@ -201,7 +201,7 @@ export class SubscriptionsService {
     return this.abonnementMailRepository.delete({ email: email });
   }
 
-  @Cron(CronExpression.EVERY_DAY_AT_5PM)
+  // @Cron(CronExpression.EVERY_DAY_AT_5PM)
   async updateSituations() {
     const stats = {
       pas_restriction: 0,
@@ -231,44 +231,30 @@ export class SubscriptionsService {
 
         if (AEP && subscription?.situation?.AEP !== AEP) {
           stats[AEP]++;
-
-          await this.brevoService.sendSituationUpdate(
-            subscription.email,
-            AEP,
-            subscription.commune,
-            subscription.libelleLocalisation
-          );
-
           situationUpdated = true;
         }
 
         if (SOU && subscription?.situation?.SOU !== SOU) {
           stats[SOU]++;
-
-          await this.brevoService.sendSituationUpdate(
-            subscription.email,
-            SOU,
-            subscription.commune,
-            subscription.libelleLocalisation
-          );
-
           situationUpdated = true;
         }
 
         if (SUP && subscription?.situation?.SUP !== SUP) {
           stats[SUP]++;
-
-          await this.brevoService.sendSituationUpdate(
-            subscription.email,
-            SUP,
-            subscription.commune,
-            subscription.libelleLocalisation
-          );
-
           situationUpdated = true;
         }
 
         if (situationUpdated) {
+          await this.brevoService.sendSituationUpdate(
+            subscription.email,
+            AEP,
+            SUP,
+            SOU,
+            subscription.commune,
+            subscription.libelleLocalisation,
+            subscription.profil
+          );
+
           await this.abonnementMailRepository.update(
             {id: subscription.id},
             {situation: {AEP, SOU, SUP}}
