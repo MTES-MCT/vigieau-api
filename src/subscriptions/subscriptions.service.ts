@@ -90,6 +90,16 @@ export class SubscriptionsService {
       }, changes);
     } else {
       await this.abonnementMailRepository.save(subscription);
+
+      await this.brevoService.sendMail(
+        29,
+        subscription.email,
+        {
+          city: this.communesService.getCommune(subscription.commune).nom,
+          address: subscription.libelleLocalisation,
+          unsubscribeUrl: this.brevoService.computeUnsubscribeUrl(subscription.email)
+        }
+      );
     }
 
     return subscription;
@@ -135,7 +145,7 @@ export class SubscriptionsService {
     );
   }
 
-  computeNiveauxAlerte({ lon, lat, commune, profil, typesEau }) {
+  computeNiveauxAlerte({ lon, lat, commune }) {
     const hasLonLat = lon || lat;
 
     const zones = hasLonLat
@@ -148,31 +158,25 @@ export class SubscriptionsService {
 
     const result: any = { zones: [] };
 
-    if (typesEau.includes('SUP')) {
-      if (sup) {
-        result.SUP = sup.niveauGravite;
-        result.zones.push(sup.idZone);
-      } else {
-        result.SUP = 'pas_restriction';
-      }
+    if (sup) {
+      result.SUP = sup.niveauGravite;
+      result.zones.push(sup.idZone);
+    } else {
+      result.SUP = 'pas_restriction';
     }
 
-    if (typesEau.includes('SOU')) {
-      if (sou) {
-        result.SOU = sou.niveauGravite;
-        result.zones.push(sou.idZone);
-      } else {
-        result.SOU = 'pas_restriction';
-      }
+    if (sou) {
+      result.SOU = sou.niveauGravite;
+      result.zones.push(sou.idZone);
+    } else {
+      result.SOU = 'pas_restriction';
     }
 
-    if (typesEau.includes('AEP')) {
-      if (aep) {
-        result.AEP = aep.niveauGravite;
-        result.zones.push(aep.idZone);
-      } else {
-        result.AEP = 'pas_restriction';
-      }
+    if (aep) {
+      result.AEP = aep.niveauGravite;
+      result.zones.push(aep.idZone);
+    } else {
+      result.AEP = 'pas_restriction';
     }
 
     return result;
@@ -217,29 +221,29 @@ export class SubscriptionsService {
     const subscriptions = await this.abonnementMailRepository.find({
       select: ['id', 'email', 'commune', 'lon', 'lat', 'typesEau', 'profil', 'libelleLocalisation', 'situation', 'createdAt'],
     });
-    for(const subscription of subscriptions) {
+    for (const subscription of subscriptions) {
       let situationUpdated = false;
 
-      if(subscription.createdAt &&
+      if (subscription.createdAt &&
         new Date(subscription.createdAt).getTime() > Date.now() - 24 * 60 * 60 * 1000) {
-        stats.nouveau ++;
+        stats.nouveau++;
       }
 
       try {
         // @ts-ignore
-        const {AEP, SOU, SUP} = this.computeNiveauxAlerte(subscription);
+        const { AEP, SOU, SUP } = this.computeNiveauxAlerte(subscription);
 
-        if (AEP && subscription?.situation?.AEP !== AEP) {
+        if (subscription.typesEau.includes('AEP') && AEP && subscription?.situation?.AEP !== AEP) {
           stats[AEP]++;
           situationUpdated = true;
         }
 
-        if (SOU && subscription?.situation?.SOU !== SOU) {
+        if (subscription.typesEau.includes('SOU') && SOU && subscription?.situation?.SOU !== SOU) {
           stats[SOU]++;
           situationUpdated = true;
         }
 
-        if (SUP && subscription?.situation?.SUP !== SUP) {
+        if (subscription.typesEau.includes('SUP') && SUP && subscription?.situation?.SUP !== SUP) {
           stats[SUP]++;
           situationUpdated = true;
         }
@@ -252,15 +256,15 @@ export class SubscriptionsService {
             SOU,
             subscription.commune,
             subscription.libelleLocalisation,
-            subscription.profil
+            subscription.profil,
           );
 
           await this.abonnementMailRepository.update(
-            {id: subscription.id},
-            {situation: {AEP, SOU, SUP}}
-          )
+            { id: subscription.id },
+            { situation: { AEP, SOU, SUP } },
+          );
         } else {
-          stats.pas_changement++
+          stats.pas_changement++;
         }
       } catch (error) {
         stats.erreur++;
@@ -271,37 +275,37 @@ export class SubscriptionsService {
   }
 
   async sendMattermostNotification(stats) {
-    const sentences = []
+    const sentences = [];
     if (stats.nouveau) {
-      sentences.push(`- **${stats.nouveau}** usagers se sont inscrits au cours des dernières 24h 📧`)
+      sentences.push(`- **${stats.nouveau}** usagers se sont inscrits au cours des dernières 24h 📧`);
     }
 
     if (stats.pas_restriction) {
-      sentences.push(`- **${stats.pas_restriction}** usagers n’ont plus de restrictions 🚰`)
+      sentences.push(`- **${stats.pas_restriction}** usagers n’ont plus de restrictions 🚰`);
     }
 
     if (stats.vigilance) {
-      sentences.push(`- **${stats.vigilance}** usagers sont passés en **Vigilance** 💧`)
+      sentences.push(`- **${stats.vigilance}** usagers sont passés en **Vigilance** 💧`);
     }
 
     if (stats.alerte) {
-      sentences.push(`- **${stats.alerte}** usagers sont passés en **Alerte** 😬`)
+      sentences.push(`- **${stats.alerte}** usagers sont passés en **Alerte** 😬`);
     }
 
     if (stats.alerte_renforcee) {
-      sentences.push(`- **${stats.alerte_renforcee}** usagers sont passés en **Alerte renforcée** 🥵`)
+      sentences.push(`- **${stats.alerte_renforcee}** usagers sont passés en **Alerte renforcée** 🥵`);
     }
 
     if (stats.crise) {
-      sentences.push(`- **${stats.crise}** usagers sont passés en **Crise** 🔥`)
+      sentences.push(`- **${stats.crise}** usagers sont passés en **Crise** 🔥`);
     }
 
     if (stats.pas_changement) {
-      sentences.push(`- **${stats.pas_changement}** usagers n’ont pas de changement 👻`)
+      sentences.push(`- **${stats.pas_changement}** usagers n’ont pas de changement 👻`);
     }
 
     if (stats.erreur) {
-      sentences.push(`- **${stats.erreur}** usagers sont en erreur 🧨`)
+      sentences.push(`- **${stats.erreur}** usagers sont en erreur 🧨`);
     }
 
     const message = sentences.join('\n');

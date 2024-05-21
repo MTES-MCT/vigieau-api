@@ -26,9 +26,9 @@ export class BrevoService {
           address: libelleLocalisation,
           city: this.communesService.getCommune(codeCommune).nom,
           unsubscribeUrl: this.computeUnsubscribeUrl(email),
-          niveaugraviteaep: this.getniveauGraviteFr(niveauGraviteAep),
-          niveaugravitesup: this.getniveauGraviteFr(niveauGraviteSup),
-          niveaugravitesou: this.getniveauGraviteFr(niveauGraviteSou),
+          niveauGraviteAep: this.getniveauGraviteFr(niveauGraviteAep),
+          niveauGraviteSup: this.getniveauGraviteFr(niveauGraviteSup),
+          niveauGraviteSou: this.getniveauGraviteFr(niveauGraviteSou),
           restrictionUrl: `${process.env.WEBSITE_URL}/situation?profil=${profil}&adresse=${libelleLocalisation}`,
         },
       );
