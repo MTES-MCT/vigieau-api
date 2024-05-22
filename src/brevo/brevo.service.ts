@@ -15,7 +15,16 @@ export class BrevoService {
     apiKey.apiKey = process.env.BREVO_API_KEY;
   }
 
-  sendSituationUpdate(email, niveauGraviteAep, niveauGraviteSup, niveauGraviteSou, codeCommune, libelleLocalisation, profil) {
+  sendSituationUpdate(email: string,
+                      niveauGraviteAep: string,
+                      changementAep: boolean,
+                      niveauGraviteSup: string,
+                      changementSup: boolean,
+                      niveauGraviteSou: string,
+                      changementSou: boolean,
+                      codeCommune: string,
+                      libelleLocalisation: string,
+                      profil: string) {
     if (process.env.EMAIL_NOTIFICATIONS_ENABLED === '1') {
       const recipient = process.env.EMAIL_NOTIFICATIONS_DEV_RECIPIENT || email;
 
@@ -27,8 +36,11 @@ export class BrevoService {
           city: this.communesService.getCommune(codeCommune).nom,
           unsubscribeUrl: this.computeUnsubscribeUrl(email),
           niveauGraviteAep: this.getniveauGraviteFr(niveauGraviteAep),
+          changementAep: changementAep,
           niveauGraviteSup: this.getniveauGraviteFr(niveauGraviteSup),
+          changementSup: changementSup,
           niveauGraviteSou: this.getniveauGraviteFr(niveauGraviteSou),
+          changementSou: changementSou,
           restrictionUrl: `${process.env.WEBSITE_URL}/situation?profil=${profil}&adresse=${libelleLocalisation}`,
         },
       );
@@ -36,26 +48,27 @@ export class BrevoService {
   }
 
   getTemplateId(niveauGraviteAep, niveauGraviteSup, niveauGraviteSou) {
-    // TODO CHANGER TEMPLATE IDS
-    if (niveauGraviteAep === 'pas_restriction' && niveauGraviteSup === 'pas_restriction' && niveauGraviteSou === 'pas_restriction') {
+    if (niveauGraviteAep === 'pas_restriction'
+      && niveauGraviteSup === 'pas_restriction'
+      && niveauGraviteSou === 'pas_restriction') {
       return 32;
     }
 
-    return 31;
+    return 65;
   }
 
   getniveauGraviteFr(niveauGravite) {
     switch (niveauGravite) {
       case 'pas_restriction':
-        return 'Pas de restrictions';
+        return 'pas de restrictions';
       case 'vigilance':
-        return 'Vigilance';
+        return 'vigilance';
       case 'alerte':
-        return 'Alerte';
+        return 'alerte';
       case 'alerte_renforcee':
-        return 'Alerte renforcée';
+        return 'alerte renforcée';
       case 'crise':
-        return 'Crise';
+        return 'crise';
     }
   }
 

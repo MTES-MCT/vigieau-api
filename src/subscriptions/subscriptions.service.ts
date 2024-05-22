@@ -205,7 +205,7 @@ export class SubscriptionsService {
     return this.abonnementMailRepository.delete({ email: email });
   }
 
-  // @Cron(CronExpression.EVERY_DAY_AT_5PM)
+  @Cron(CronExpression.EVERY_MINUTE)
   async updateSituations() {
     const stats = {
       pas_restriction: 0,
@@ -252,8 +252,11 @@ export class SubscriptionsService {
           await this.brevoService.sendSituationUpdate(
             subscription.email,
             AEP,
+            subscription.situation.AEP && subscription.situation.AEP !== AEP,
             SUP,
+            subscription.situation.SUP && subscription.situation.SUP !== SUP,
             SOU,
+            subscription.situation.SOU && subscription.situation.SOU !== SOU,
             subscription.commune,
             subscription.libelleLocalisation,
             subscription.profil,
