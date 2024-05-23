@@ -205,7 +205,7 @@ export class SubscriptionsService {
     return this.abonnementMailRepository.delete({ email: email });
   }
 
-  @Cron(CronExpression.EVERY_MINUTE)
+  @Cron(CronExpression.EVERY_DAY_AT_5PM)
   async updateSituations() {
     const stats = {
       pas_restriction: 0,
