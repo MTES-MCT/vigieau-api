@@ -312,6 +312,6 @@ export class SubscriptionsService {
     }
 
     const message = sentences.join('\n');
-    this.mattermostService.sendMessage(message);
+    await this.mattermostService.sendMessage(message);
   }
 }

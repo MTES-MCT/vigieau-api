@@ -307,7 +307,7 @@ export class ZonesService {
    */
   @Cron(CronExpression.EVERY_10_SECONDS)
   async updateZones() {
-    if (this.loading) {
+    if (this.loading || !this.lastUpdate) {
       return;
     }
     const count = await this.zoneAlerteComputedRepository
