@@ -8,6 +8,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { AbonnementMail } from '../zones/entities/abonnement_mail.entity';
 import { BrevoModule } from '../brevo/brevo.module';
 import { MattermostModule } from '../mattermost/mattermost.module';
+import { CronModule } from '../cron/cron.module';
 
 @Module({
   imports: [
@@ -16,7 +17,8 @@ import { MattermostModule } from '../mattermost/mattermost.module';
     HttpModule,
     ZonesModule,
     BrevoModule,
-    MattermostModule
+    MattermostModule,
+    CronModule
   ],
   controllers: [SubscriptionsController],
   providers: [SubscriptionsService],

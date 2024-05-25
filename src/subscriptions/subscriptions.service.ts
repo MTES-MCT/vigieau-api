@@ -12,6 +12,7 @@ import { Cron, CronExpression } from '@nestjs/schedule';
 import { VigieauLogger } from '../logger/vigieau.logger';
 import { BrevoService } from '../brevo/brevo.service';
 import { MattermostService } from '../mattermost/mattermost.service';
+import { CronService } from '../cron/cron.service';
 
 @Injectable()
 export class SubscriptionsService {
@@ -23,7 +24,8 @@ export class SubscriptionsService {
               private readonly httpService: HttpService,
               private readonly zonesService: ZonesService,
               private readonly brevoService: BrevoService,
-              private readonly mattermostService: MattermostService) {
+              private readonly mattermostService: MattermostService,
+              private readonly cronService: CronService) {
   }
 
   getAllLight() {
@@ -97,8 +99,8 @@ export class SubscriptionsService {
         {
           city: this.communesService.getCommune(subscription.commune).nom,
           address: subscription.libelleLocalisation,
-          unsubscribeUrl: this.brevoService.computeUnsubscribeUrl(subscription.email)
-        }
+          unsubscribeUrl: this.brevoService.computeUnsubscribeUrl(subscription.email),
+        },
       );
     }
 
@@ -205,7 +207,20 @@ export class SubscriptionsService {
     return this.abonnementMailRepository.delete({ email: email });
   }
 
-  @Cron(CronExpression.EVERY_DAY_AT_5PM)
+  @Cron(CronExpression.EVERY_DAY_AT_4PM)
+  async tryUpdateSituations() {
+    const canRun = await this.cronService.askForLock('emails');
+    if (!canRun) {
+      return;
+    }
+    try {
+      await this.updateSituations();
+    } catch (e) {
+    } finally {
+      await this.cronService.unlock('emails');
+    }
+  }
+
   async updateSituations() {
     const stats = {
       pas_restriction: 0,

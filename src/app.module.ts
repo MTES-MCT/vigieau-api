@@ -12,6 +12,7 @@ import { ZonesModule } from './zones/zones.module';
 import { DepartementsModule } from './departements/departements.module';
 import { ScheduleModule } from '@nestjs/schedule';
 import { StatisticsModule } from './statistics/statistics.module';
+import { CronModule } from './cron/cron.module';
 import AuthModule from './auth/auth.module';
 
 @Module({
@@ -62,7 +63,8 @@ import AuthModule from './auth/auth.module';
     DepartementsModule,
     ScheduleModule.forRoot(),
     AuthModule,
-    StatisticsModule
+    StatisticsModule,
+    CronModule
   ],
   controllers: [AppController],
   providers: [
