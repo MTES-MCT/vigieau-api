@@ -231,6 +231,7 @@ export class SubscriptionsService {
       pas_changement: 0,
       erreur: 0,
       nouveau: 0,
+      mail_envoye: 0,
     };
 
     const subscriptions = await this.abonnementMailRepository.find({
@@ -248,17 +249,17 @@ export class SubscriptionsService {
         // @ts-ignore
         const { AEP, SOU, SUP } = this.computeNiveauxAlerte(subscription);
 
-        if (subscription.typesEau.includes('AEP') && AEP && subscription?.situation?.AEP !== AEP) {
+        if (subscription.typesEau.includes('AEP') && AEP && subscription.situation?.AEP !== AEP) {
           stats[AEP]++;
           situationUpdated = true;
         }
 
-        if (subscription.typesEau.includes('SOU') && SOU && subscription?.situation?.SOU !== SOU) {
+        if (subscription.typesEau.includes('SOU') && SOU && subscription.situation?.SOU !== SOU) {
           stats[SOU]++;
           situationUpdated = true;
         }
 
-        if (subscription.typesEau.includes('SUP') && SUP && subscription?.situation?.SUP !== SUP) {
+        if (subscription.typesEau.includes('SUP') && SUP && subscription.situation?.SUP !== SUP) {
           stats[SUP]++;
           situationUpdated = true;
         }
@@ -277,6 +278,8 @@ export class SubscriptionsService {
             subscription.profil,
           );
 
+          stats.mail_envoye++;
+
           await this.abonnementMailRepository.update(
             { id: subscription.id },
             { situation: { AEP, SOU, SUP } },
@@ -294,8 +297,12 @@ export class SubscriptionsService {
 
   async sendMattermostNotification(stats) {
     const sentences = [];
+    if (stats.mail_envoye) {
+      sentences.push(`- **${stats.mail_envoye}** emails envoyés 📧`);
+    }
+
     if (stats.nouveau) {
-      sentences.push(`- **${stats.nouveau}** usagers se sont inscrits au cours des dernières 24h 📧`);
+      sentences.push(`- **${stats.nouveau}** usagers se sont inscrits au cours des dernières 24h 🎊`);
     }
 
     if (stats.pas_restriction) {
