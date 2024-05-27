@@ -1,4 +1,4 @@
-import { BaseEntity, Column, CreateDateColumn, Entity, PrimaryGeneratedColumn } from 'typeorm';
+import { BaseEntity, Column, CreateDateColumn, Entity, PrimaryGeneratedColumn, UpdateDateColumn } from 'typeorm';
 
 @Entity()
 export class AbonnementMail extends BaseEntity {
@@ -46,4 +46,7 @@ export class AbonnementMail extends BaseEntity {
 
   @CreateDateColumn({ select: false, type: 'timestamp' })
   createdAt: number;
+
+  @UpdateDateColumn()
+  updatedAt: Date;
 }
