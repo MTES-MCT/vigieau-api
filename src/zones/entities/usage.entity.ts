@@ -10,6 +10,7 @@ import {
 import { Thematique } from './thematique.entity';
 import { Restriction } from './restriction.entity';
 import { ArreteCadre } from './arrete_cadre.entity';
+import { UsageFeedback } from '../../usage/entities/usage_feedback.entity';
 
 @Entity()
 @Unique(['nom', 'thematique', 'arreteCadre'])
@@ -78,4 +79,7 @@ export class Usage extends BaseEntity {
   )
   @Index()
   restriction: Restriction;
+
+  @OneToMany(() => UsageFeedback, (usageFeedbacks) => usageFeedbacks.usage)
+  usageFeedbacks: UsageFeedback[];
 }
