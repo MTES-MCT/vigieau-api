@@ -224,6 +224,7 @@ export class ZonesService {
                 break;
             }
             return {
+              id: u.id,
               nom: u.nom,
               thematique: u.thematique.nom,
               description: description,

@@ -13,6 +13,7 @@ import { DepartementsModule } from './departements/departements.module';
 import { ScheduleModule } from '@nestjs/schedule';
 import { StatisticsModule } from './statistics/statistics.module';
 import { CronModule } from './cron/cron.module';
+import { UsageModule } from './usage/usage.module';
 import AuthModule from './auth/auth.module';
 
 @Module({
@@ -64,7 +65,8 @@ import AuthModule from './auth/auth.module';
     ScheduleModule.forRoot(),
     AuthModule,
     StatisticsModule,
-    CronModule
+    CronModule,
+    UsageModule
   ],
   controllers: [AppController],
   providers: [

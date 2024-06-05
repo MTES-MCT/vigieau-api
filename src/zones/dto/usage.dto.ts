@@ -1,6 +1,9 @@
 import { ApiProperty } from '@nestjs/swagger';
 
 export class UsageDto {
+  @ApiProperty({ example: 1, description: 'Id de l\'usage' })
+  id: number;
+
   @ApiProperty({ example: 'Arrosage', description: "Thématique de l'usage" })
   thematique: string;
 
