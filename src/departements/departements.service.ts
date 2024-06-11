@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Departement } from '../zones/entities/departement.entity';
@@ -35,7 +35,14 @@ export class DepartementsService {
     if(!date) {
       date = new Date().toISOString().split('T')[0];
     }
-    return this.situationDepartements.find(d => d.date === date).departementSituation;
+    const situationDepartement = this.situationDepartements.find(d => d.date === date);
+    if(!situationDepartement) {
+      throw new HttpException(
+        `Date non disponible.`,
+        HttpStatus.NOT_FOUND,
+      );
+    }
+    return situationDepartement.departementSituation;
   }
 
   async loadSituation() {
