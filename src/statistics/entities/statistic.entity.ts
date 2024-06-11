@@ -9,24 +9,27 @@ export class Statistic extends BaseEntity {
   @Column({ type: 'date', nullable: false })
   date: string;
 
-  @Column({ nullable: false })
+  @Column({ nullable: true })
   visits: number;
 
-  @Column({ nullable: false })
+  @Column({ nullable: true })
   restrictionsSearch: number;
 
-  @Column({ nullable: false })
+  @Column({ nullable: true })
   arreteDownloads: number;
 
-  @Column('json', { nullable: false })
+  @Column('json', { nullable: true })
   profileRepartition: any;
 
-  @Column('json', { nullable: false })
+  @Column('json', { nullable: true })
   departementRepartition: any;
 
-  @Column('json', { nullable: false })
+  @Column('json', { nullable: true })
   regionRepartition: any;
 
-  @Column({ nullable: false })
+  @Column({ nullable: true })
   subscriptions: number;
+
+  @Column('json', { nullable: true })
+  departementSituation: any;
 }

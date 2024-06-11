@@ -5,7 +5,7 @@ import { firstValueFrom } from 'rxjs';
 import { DepartementsService } from '../departements/departements.service';
 import { SubscriptionsService } from '../subscriptions/subscriptions.service';
 import { InjectRepository } from '@nestjs/typeorm';
-import { IsNull, Not, Repository } from 'typeorm';
+import { IsNull, MoreThanOrEqual, Not, Repository } from 'typeorm';
 import { Statistic } from './entities/statistic.entity';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { VigieauLogger } from '../logger/vigieau.logger';
@@ -15,6 +15,7 @@ export class StatisticsService {
   private readonly logger = new VigieauLogger('StatisticsService');
 
   statistics: any;
+  releaseDate = '2023-07-11';
 
   constructor(@InjectRepository(Statistic)
               private readonly statisticRepository: Repository<Statistic>,
@@ -30,47 +31,50 @@ export class StatisticsService {
 
   async loadStatistics() {
     const statistics = await this.statisticRepository.find({
+      where: {
+        date: MoreThanOrEqual(this.releaseDate),
+      },
       order: {
         date: 'ASC',
-      }
+      },
     });
-    const last30Days = statistics.slice(-30)
+    const last30Days = statistics.slice(-30);
     const statsToReturn = {
       subscriptions: 0,
       profileRepartition: {},
       departementRepartition: {},
       regionRepartition: {},
-      statsByDay: []
-    }
+      statsByDay: [],
+    };
     for (const stat of last30Days) {
       for (const [profile, value] of Object.entries(stat.profileRepartition)) {
         statsToReturn.profileRepartition[profile] = statsToReturn.profileRepartition[profile]
           ? statsToReturn.profileRepartition[profile] + value
-          : value
+          : value;
       }
 
       for (const [departement, value] of Object.entries(stat.departementRepartition)) {
         statsToReturn.departementRepartition[departement] = statsToReturn.departementRepartition[departement]
           ? statsToReturn.departementRepartition[departement] + value
-          : value
+          : value;
       }
 
       for (const [region, value] of Object.entries(stat.regionRepartition)) {
         statsToReturn.regionRepartition[region] = statsToReturn.regionRepartition[region]
           ? statsToReturn.regionRepartition[region] + value
-          : value
+          : value;
       }
     }
 
-    statsToReturn.subscriptions = statistics.reduce((accumulator, object) => accumulator + object.subscriptions, 0)
+    statsToReturn.subscriptions = statistics.reduce((accumulator, object) => accumulator + object.subscriptions, 0);
 
     statsToReturn.statsByDay = statistics.map(s => {
-      const statsLight: any = {}
-      statsLight.date = s.date
-      statsLight.visits = s.visits
-      statsLight.arreteDownloads = s.arreteDownloads
-      statsLight.restrictionsSearch = s.restrictionsSearch
-      return statsLight
+      const statsLight: any = {};
+      statsLight.date = s.date;
+      statsLight.visits = s.visits;
+      statsLight.arreteDownloads = s.arreteDownloads;
+      statsLight.restrictionsSearch = s.restrictionsSearch;
+      return statsLight;
     });
 
     this.statistics = statsToReturn;
@@ -85,7 +89,7 @@ export class StatisticsService {
       where: { id: Not(IsNull()) },
       order: { date: 'DESC' },
     });
-    const lastStatDate = lastStat?.date ? new Date(lastStat?.date) : new Date('2023-07-11');
+    const lastStatDate = lastStat?.date ? new Date(lastStat?.date) : new Date(this.releaseDate);
     const matomoDate = `date=${this.generateDateString(lastStatDate)},today`;
     const [
       visitsByDay,
