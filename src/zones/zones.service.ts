@@ -270,7 +270,7 @@ export class ZonesService {
 
       this.loading = false;
       this.logger.log('LOADING ALL ZONES & COMMUNES - END');
-      this.departementsService.loadSituation();
+      this.departementsService.loadSituation(this.allZonesWithRestrictions);
     } catch (e) {
       this.loading = false;
       this.logger.error('LOADING ALL ZONES & COMMUNES - ERROR', e);

@@ -5,6 +5,8 @@ import { Departement } from '../zones/entities/departement.entity';
 import { VigieauLogger } from '../logger/vigieau.logger';
 import { DepartementDto } from './dto/departement.dto';
 import { Statistic } from '../statistics/entities/statistic.entity';
+import { Utils } from '../core/utils';
+import { max } from 'lodash';
 
 @Injectable()
 export class DepartementsService {
@@ -35,7 +37,7 @@ export class DepartementsService {
     if(!date) {
       date = new Date().toISOString().split('T')[0];
     }
-    const situationDepartement = this.situationDepartements.find(d => d.date === date);
+    const situationDepartement = this.situationDepartements.find(s => s.date === date);
     if(!situationDepartement) {
       throw new HttpException(
         `Date non disponible.`,
@@ -45,7 +47,7 @@ export class DepartementsService {
     return situationDepartement.departementSituation;
   }
 
-  async loadSituation() {
+  async loadSituation(currentZones) {
     this.logger.log('LOAD SITUATION DEPARTEMENTS - BEGIN');
     const departements = await this.departementRepository.find({
       select: {
@@ -74,11 +76,16 @@ export class DepartementsService {
       return {
         date: s.date,
         departementSituation: departements.map(d => {
+          let niveauGraviteMax = s.departementSituation && s.departementSituation[d.code] ? s.departementSituation[d.code] : null;
+          if(s.date === new Date().toISOString().split('T')[0]) {
+            const depZones = currentZones.filter(z => z.departement === d.code);
+            niveauGraviteMax = depZones.length > 0 ? Utils.getNiveauInversed(max(depZones.map(z => Utils.getNiveau(z.niveauGravite)))) : null;
+          }
           return {
             code: d.code,
             nom: d.nom,
             region: d.region?.nom,
-            niveauGraviteMax: s.departementSituation && s.departementSituation[d.code] ? s.departementSituation[d.code] : null,
+            niveauGraviteMax: niveauGraviteMax,
           }
         }),
       };
