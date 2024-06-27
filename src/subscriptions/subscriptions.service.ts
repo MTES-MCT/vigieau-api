@@ -265,6 +265,9 @@ export class SubscriptionsService {
         }
 
         if (situationUpdated) {
+          // TMP
+          this.logger.log('CHECK SUBSCRIPTION', AEP, SOU, SUP, subscription);
+
           await this.brevoService.sendSituationUpdate(
             subscription.email,
             AEP,
@@ -289,7 +292,7 @@ export class SubscriptionsService {
         }
       } catch (error) {
         stats.erreur++;
-        this.logger.error('MISE A JOUR SITUATION', error);
+        this.logger.error(`MISE A JOUR SITUATION - ${JSON.stringify(subscription)} - `, error);
       }
     }
     await this.sendMattermostNotification(stats);
