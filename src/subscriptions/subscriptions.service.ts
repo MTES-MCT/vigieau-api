@@ -266,7 +266,7 @@ export class SubscriptionsService {
 
         if (situationUpdated) {
           // TMP
-          this.logger.log('CHECK SUBSCRIPTION', AEP, SOU, SUP, subscription);
+          this.logger.log(`CHECK SUBSCRIPTION - ${AEP} - ${SOU} - ${SUP} - ${JSON.stringify(subscription)}`);
 
           await this.brevoService.sendSituationUpdate(
             subscription.email,
