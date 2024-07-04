@@ -13,13 +13,57 @@ export class UsageService {
   }
 
   async feedback(usageId: number) {
-    const usage = await this.usageRepository.findOne({ where: {id: usageId}});
-    if(!usage) {
+    const usage = await this.usageRepository.findOne({
+      select: {
+        id: true,
+        nom: true,
+        thematique: {
+          id: true,
+          nom: true,
+        },
+        descriptionVigilance: true,
+        descriptionAlerte: true,
+        descriptionAlerteRenforcee: true,
+        descriptionCrise: true,
+        restriction: {
+          niveauGravite: true,
+          arreteRestriction: {
+            id: true,
+          }
+        }
+      },
+      relations: ['thematique', 'restriction', 'restriction.arreteRestriction'],
+      where: { id: usageId },
+    });
+    if (!usage) {
       throw new HttpException(
         `Usage non trouvé.`,
         HttpStatus.NOT_FOUND,
       );
     }
-    return this.usageFeedbackRepository.save({usage});
+    let description;
+    switch (usage.restriction.niveauGravite) {
+      case 'vigilance':
+        description = usage.descriptionVigilance;
+        break;
+      case 'alerte':
+        description = usage.descriptionAlerte;
+        break;
+      case 'alerte_renforcee':
+        description = usage.descriptionAlerteRenforcee;
+        break;
+      case 'crise':
+        description = usage.descriptionCrise;
+        break;
+    }
+    const usageFeedback = {
+      usageNom: usage.nom,
+      usageThematique: usage.thematique.nom,
+      usageDescription: description,
+      arreteRestriction: {
+        id: usage.restriction.arreteRestriction.id
+      }
+    }
+    return this.usageFeedbackRepository.save(usageFeedback);
   }
 }

@@ -15,6 +15,7 @@ import { Fichier } from './fichier.entity';
 import { Restriction } from './restriction.entity';
 import { ArreteCadre } from './arrete_cadre.entity';
 import { Departement } from './departement.entity';
+import { UsageFeedback } from '../../usage/entities/usage_feedback.entity';
 
 @Entity()
 export class ArreteRestriction extends BaseEntity {
@@ -83,6 +84,12 @@ export class ArreteRestriction extends BaseEntity {
     (arreteRestriction) => arreteRestriction.arreteRestrictionAbroge,
   )
   arretesRestriction: ArreteRestriction[];
+
+  @OneToMany(
+    () => UsageFeedback,
+    (usageFeedback) => usageFeedback.arreteRestriction,
+  )
+  usageFeedbacks: UsageFeedback[];
 
   @CreateDateColumn({ select: false, type: 'timestamp' })
   created_at: number;
