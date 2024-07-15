@@ -66,7 +66,7 @@ export class ZonesService {
   async findOne(id: string) {
     const z = this.allZonesWithRestrictions.find(zone => zone.id === +id);
     if (z) {
-      return z;
+      return this.formatZone(z);
     }
 
     throw new HttpException(
@@ -133,6 +133,7 @@ export class ZonesService {
       const zonesWithRestrictions = await this.zoneAlerteComputedRepository
         .createQueryBuilder('zone_alerte_computed')
         .select('zone_alerte_computed.id', 'id')
+        .select('zone_alerte_computed.idSandre', 'idSandre')
         .addSelect('zone_alerte_computed.code', 'code')
         .addSelect('zone_alerte_computed.nom', 'nom')
         .addSelect('zone_alerte_computed.type', 'type')
@@ -195,6 +196,7 @@ export class ZonesService {
         });
         return {
           id: z.id,
+          idSandre: z.idSandre,
           code: z.code,
           nom: z.nom,
           type: z.type,
@@ -278,29 +280,40 @@ export class ZonesService {
   }
 
   formatZones(zones: any[], profil?: string, zoneType?: string) {
+    let zonesToReturn = zones;
+
+    if (zoneType) {
+      zonesToReturn = zones.find(z => z.type === zoneType);
+    }
+
+    return zonesToReturn.map(z => this.formatZone(z, profil));
+  }
+
+  formatZone(zone: any, profil?: string) {
     if (profil) {
-      zones.forEach(z => {
-        z.usages = z.usages.filter(u => {
-          if (profil === 'particulier') {
-            return u.concerneParticulier;
-          } else if (profil === 'entreprise') {
-            return u.concerneEntreprise;
-          } else if (profil === 'exploitation') {
-            return u.concerneExploitation;
-          } else if (profil === 'collectivite') {
-            return u.concerneCollectivite;
-          } else {
-            return false;
-          }
-        });
+      zone.usages = zone.usages.filter(u => {
+        if (profil === 'particulier') {
+          return u.concerneParticulier;
+        } else if (profil === 'entreprise') {
+          return u.concerneEntreprise;
+        } else if (profil === 'exploitation') {
+          return u.concerneExploitation;
+        } else if (profil === 'collectivite') {
+          return u.concerneCollectivite;
+        } else {
+          return false;
+        }
       });
     }
 
-    if (zoneType) {
-      return zones.find(z => z.type === zoneType);
-    }
-
-    return zones;
+    // Duplication des attributs pour être ISO SANDRE
+    return zone.map(z => {
+      z.gid = z.idSandre;
+      z.CdZAS = z.code;
+      z.LbZAS = z.nom;
+      z.TypeZAS = z.type;
+      return z;
+    });
   }
 
   /**
@@ -320,7 +333,7 @@ export class ZonesService {
         updatedAt: MoreThan(this.lastUpdate.toLocaleString('sv')),
       })
       .getCount();
-    if(count > 0) {
+    if (count > 0) {
       this.loadAllZones();
     }
   }

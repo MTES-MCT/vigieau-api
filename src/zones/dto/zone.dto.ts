@@ -6,11 +6,23 @@ export class ZoneDto {
   @ApiProperty({ example: 1, description: 'Id de la zone d\'alerte' })
   id: number;
 
+  @ApiProperty({ example: 1, description: 'Id SANDRE de la zone d\'alerte' })
+  idSandre: number;
+
+  @ApiProperty({ example: 1, description: 'Id SANDRE de la zone d\'alerte - ISO SANDRE' })
+  gid: number;
+
   @ApiProperty({ example: '01_ZONE_SUP', description: 'Code de la zone d\'alerte' })
   code: string;
 
+  @ApiProperty({ example: '01_ZONE_SUP', description: 'Code de la zone d\'alerte - ISO SANDRE' })
+  CdZAS: string;
+
   @ApiProperty({ example: 'Zone superficielle en aval de la rivière', description: 'Nom de la zone d\'alerte' })
   nom: string;
+
+  @ApiProperty({ example: 'Zone superficielle en aval de la rivière', description: 'Nom de la zone d\'alerte - ISO SANDRE' })
+  LbZAS: string;
 
   @ApiProperty({
     enum: ['AEP', 'SOU', 'SUP'],
@@ -18,6 +30,13 @@ export class ZoneDto {
     description: 'Type de la zone d\'alerte (SOU / eau souterraine, SUP / eau superficielle ou AEP / eau potable)',
   })
   type: string;
+
+  @ApiProperty({
+    enum: ['AEP', 'SOU', 'SUP'],
+    example: 'SUP',
+    description: 'Type de la zone d\'alerte (SOU / eau souterraine, SUP / eau superficielle ou AEP / eau potable) - ISO SANDRE',
+  })
+  TypeZAS: string;
 
   @ApiProperty({
     enum: ['vigilance', 'alerte', 'alerte_renforcee', 'crise'],

@@ -15,6 +15,9 @@ export class ZoneAlerteComputed extends BaseEntity {
   @PrimaryGeneratedColumn()
   id: number;
 
+  @Column({ nullable: true })
+  idSandre: number;
+
   @Column({ nullable: false, length: 200 })
   nom: string;
 
