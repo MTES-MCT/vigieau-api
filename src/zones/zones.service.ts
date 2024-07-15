@@ -183,6 +183,7 @@ export class ZonesService {
         return zone;
       }));
 
+      // @ts-ignore
       this.allZonesWithRestrictions = zonesWithRestrictions.map(z => {
         const usages = z.restriction?.usages?.filter(u => {
           if (z.type === 'SUP') {
