@@ -284,13 +284,18 @@ export class ZonesService {
     let zonesToReturn = zones;
 
     if (zoneType) {
-      zonesToReturn = zones.find(z => z.type === zoneType);
+      const toReturn = zones.find(z => z.type === zoneType);
+      return this.formatZone(toReturn, profil);
     }
 
     return zonesToReturn?.map(z => this.formatZone(z, profil));
   }
 
   formatZone(zone: any, profil?: string) {
+    if (!zone) {
+      return zone;
+    }
+
     if (profil) {
       zone.usages = zone.usages.filter(u => {
         if (profil === 'particulier') {
