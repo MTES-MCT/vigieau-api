@@ -133,7 +133,7 @@ export class ZonesService {
       const zonesWithRestrictions = await this.zoneAlerteComputedRepository
         .createQueryBuilder('zone_alerte_computed')
         .select('zone_alerte_computed.id', 'id')
-        .select('zone_alerte_computed.idSandre', 'idSandre')
+        .addSelect('zone_alerte_computed.idSandre', 'idSandre')
         .addSelect('zone_alerte_computed.code', 'code')
         .addSelect('zone_alerte_computed.nom', 'nom')
         .addSelect('zone_alerte_computed.type', 'type')
@@ -313,13 +313,14 @@ export class ZonesService {
     }
 
     // Duplication des attributs pour être ISO SANDRE
-    return zone.map(z => {
-      z.gid = z.idSandre;
-      z.CdZAS = z.code;
-      z.LbZAS = z.nom;
-      z.TypeZAS = z.type;
-      return z;
-    });
+    return {
+      ...zone, ...{
+        gid: zone.idSandre,
+        CdZAS: zone.code,
+        LbZAS: zone.nom,
+        TypeZAS: zone.type,
+      },
+    };
   }
 
   /**
