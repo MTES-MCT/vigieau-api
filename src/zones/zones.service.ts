@@ -287,7 +287,7 @@ export class ZonesService {
       zonesToReturn = zones.find(z => z.type === zoneType);
     }
 
-    return zonesToReturn.map(z => this.formatZone(z, profil));
+    return zonesToReturn?.map(z => this.formatZone(z, profil));
   }
 
   formatZone(zone: any, profil?: string) {
