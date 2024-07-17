@@ -15,6 +15,7 @@ import { StatisticsModule } from './statistics/statistics.module';
 import { CronModule } from './cron/cron.module';
 import { UsageModule } from './usage/usage.module';
 import AuthModule from './auth/auth.module';
+import { ArretesRestrictionsModule } from './arretes_restrictions/arretes_restrictions.module';
 
 @Module({
   imports: [
@@ -66,7 +67,8 @@ import AuthModule from './auth/auth.module';
     AuthModule,
     StatisticsModule,
     CronModule,
-    UsageModule
+    UsageModule,
+    ArretesRestrictionsModule,
   ],
   controllers: [AppController],
   providers: [
