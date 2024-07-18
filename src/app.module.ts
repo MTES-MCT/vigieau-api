@@ -16,6 +16,7 @@ import { CronModule } from './cron/cron.module';
 import { UsageModule } from './usage/usage.module';
 import AuthModule from './auth/auth.module';
 import { ArretesRestrictionsModule } from './arretes_restrictions/arretes_restrictions.module';
+import { DataModule } from './data/data.module';
 
 @Module({
   imports: [
@@ -69,6 +70,7 @@ import { ArretesRestrictionsModule } from './arretes_restrictions/arretes_restri
     CronModule,
     UsageModule,
     ArretesRestrictionsModule,
+    DataModule,
   ],
   controllers: [AppController],
   providers: [
@@ -82,4 +84,5 @@ import { ArretesRestrictionsModule } from './arretes_restrictions/arretes_restri
     },
   ],
 })
-export class AppModule {}
+export class AppModule {
+}

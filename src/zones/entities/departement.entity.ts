@@ -11,6 +11,7 @@ import {
 } from 'typeorm';
 import { ArreteRestriction } from './arrete_restriction.entity';
 import { Region } from './region.entity';
+import { StatisticDepartement } from '../../data/entities/statistic_departement.entity';
 
 @Entity()
 export class Departement extends BaseEntity {
@@ -56,4 +57,7 @@ export class Departement extends BaseEntity {
 
   // @OneToOne(() => Parametres, (parametres) => parametres.departement)
   // parametres: Parametres;
+
+  @OneToMany(() => StatisticDepartement, (statisticDepartement) => statisticDepartement.departement)
+  statisticDepartement: StatisticDepartement[];
 }
