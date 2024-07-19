@@ -11,6 +11,8 @@ export class DataService {
   private readonly logger = new VigieauLogger('DataService');
 
   data: any;
+  dataArea: any;
+  dataDepartement: any;
   departements: any[];
   metropoleArea: number;
   fullArea: number;
@@ -25,30 +27,22 @@ export class DataService {
     this.loadData();
   }
 
-  findByDate(dateDebut?: string, dateFin?: string) {
-    const dataFiltered = this.data.filter(d =>
+  areaFindByDate(dateDebut?: string, dateFin?: string) {
+    return this.dataArea.filter(d =>
       moment(d.date).isSameOrAfter(moment(this.beginDate, 'YYYY-MM-DD'), 'day')
       && moment(d.date, 'YYYY-MM-DD').isSameOrBefore(moment(), 'day')
       && (dateDebut ? moment(d.date, 'YYYY-MM-DD').isSameOrAfter(moment(dateDebut, 'YYYY-MM-DD'), 'day') : true)
       && (dateFin ? moment(d.date, 'YYYY-MM-DD').isSameOrBefore(moment(dateFin, 'YYYY-MM-DD'), 'day') : true),
     );
-    return dataFiltered.map(d => {
-      return {
-        date: d.date,
-        ESO: this.filterRestrictions(d.restrictions, 'SOU', this.fullArea),
-        ESU: this.filterRestrictions(d.restrictions, 'SUP', this.fullArea),
-        AEP: this.filterRestrictions(d.restrictions, 'AEP', this.fullArea),
-      };
-    });
   }
 
-  filterRestrictions(restrictions: any, zoneType: string, areaPercentage: number) {
-    return {
-      vigilance: (restrictions.reduce((acc, r) => acc + Number(r[zoneType] ? r[zoneType].vigilance : 0), 0) * 100 / areaPercentage).toFixed(2),
-      alerte: (restrictions.reduce((acc, r) => acc + Number(r[zoneType] ? r[zoneType].alerte : 0), 0) * 100 / areaPercentage).toFixed(2),
-      alerte_renforcee: (restrictions.reduce((acc, r) => acc + Number(r[zoneType] ? r[zoneType].alerte_renforcee : 0), 0) * 100 / areaPercentage).toFixed(2),
-      crise: (restrictions.reduce((acc, r) => acc + Number(r[zoneType] ? r[zoneType].crise : 0), 0) * 100 / areaPercentage).toFixed(2),
-    };
+  departementFindByDate(dateDebut?: string, dateFin?: string) {
+    return this.dataDepartement.filter(d =>
+      moment(d.date).isSameOrAfter(moment(this.beginDate, 'YYYY-MM-DD'), 'day')
+      && moment(d.date, 'YYYY-MM-DD').isSameOrBefore(moment(), 'day')
+      && (dateDebut ? moment(d.date, 'YYYY-MM-DD').isSameOrAfter(moment(dateDebut, 'YYYY-MM-DD'), 'day') : true)
+      && (dateFin ? moment(d.date, 'YYYY-MM-DD').isSameOrBefore(moment(dateFin, 'YYYY-MM-DD'), 'day') : true),
+    );
   }
 
   async loadData() {
@@ -86,5 +80,63 @@ export class DataService {
       });
       this.data.push(d);
     }
+
+    this.computeDataArea();
+    this.computeDataDepartement();
+  }
+
+  computeDataArea() {
+    this.dataArea = this.data.map(d => {
+      return {
+        date: d.date,
+        ESO: this.filterRestrictions(d.restrictions, 'SOU', this.fullArea),
+        ESU: this.filterRestrictions(d.restrictions, 'SUP', this.fullArea),
+        AEP: this.filterRestrictions(d.restrictions, 'AEP', this.fullArea),
+      };
+    });
+  }
+
+  filterRestrictions(restrictions: any, zoneType: string, areaPercentage: number) {
+    return {
+      vigilance: (restrictions.reduce((acc, r) => acc + Number(r[zoneType] ? r[zoneType].vigilance : 0), 0) * 100 / areaPercentage).toFixed(2),
+      alerte: (restrictions.reduce((acc, r) => acc + Number(r[zoneType] ? r[zoneType].alerte : 0), 0) * 100 / areaPercentage).toFixed(2),
+      alerte_renforcee: (restrictions.reduce((acc, r) => acc + Number(r[zoneType] ? r[zoneType].alerte_renforcee : 0), 0) * 100 / areaPercentage).toFixed(2),
+      crise: (restrictions.reduce((acc, r) => acc + Number(r[zoneType] ? r[zoneType].crise : 0), 0) * 100 / areaPercentage).toFixed(2),
+    };
+  }
+
+  computeDataDepartement() {
+    const dataToReturn = [];
+    this.data.forEach(d => {
+      const tmp = {
+        date: d.date,
+        departements: [],
+      };
+      this.departements.forEach(departement => {
+        tmp.departements.push({
+          code: departement.code,
+          niveauGravite: this.findMaxNiveauGravite(d.restrictions, departement.code),
+        });
+      });
+      dataToReturn.push(tmp);
+    });
+    this.dataDepartement = dataToReturn;
+  }
+
+  findMaxNiveauGravite(restrictions: any[], departementCode: string) {
+    const restrictionsDepartement = restrictions.find(r => r.departement === departementCode);
+    if (!restrictionsDepartement) {
+      return null;
+    }
+    const zonesType = ['SUP', 'SOU', 'AEP'];
+    const niveauxGravite = ['crise', 'alerte_renforcee', 'alerte', 'vigilance'];
+    for (const niveauGravite of niveauxGravite) {
+      for (const zoneType of zonesType) {
+        if (restrictionsDepartement[zoneType][niveauGravite] > 0) {
+          return niveauGravite;
+        }
+      }
+    }
+    return null;
   }
 }
