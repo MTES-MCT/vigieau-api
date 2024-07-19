@@ -5,6 +5,7 @@ import { Repository } from 'typeorm';
 import { StatisticDepartement } from './entities/statistic_departement.entity';
 import { Departement } from '../zones/entities/departement.entity';
 import moment from 'moment';
+import { Cron, CronExpression } from '@nestjs/schedule';
 
 @Injectable()
 export class DataService {
@@ -45,6 +46,7 @@ export class DataService {
     );
   }
 
+  @Cron(CronExpression.EVERY_3_HOURS)
   async loadData() {
     this.logger.log('LOAD DATA');
     const statisticsDepartement = await this.statisticDepartementRepository.find({
