@@ -148,7 +148,7 @@ export class ZonesService {
 
       this.logger.log('LOADING ALL ZONES & COMMUNES - MAPPING RESTRICTION');
 
-      const batchSize = 500;
+      const batchSize = 100;
       for (let i = 0; i < zonesWithRestrictions.length; i += batchSize) {
         this.logger.log(`LOADING ALL ZONES & COMMUNES - MAPPING RESTRICTION - BATCH ${i}`);
         await Promise.all(zonesWithRestrictions.slice(i, i + batchSize).map(async (zone) => {
