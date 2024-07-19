@@ -180,6 +180,7 @@ export class ZonesService {
       this.logger.log('LOADING ALL ZONES & COMMUNES - MAPPING COMMUNES');
 
       for (let i = 0; i < zonesWithRestrictions.length; i += batchSize) {
+        this.logger.log(`LOADING ALL ZONES & COMMUNES - MAPPING COMMUNES - BATCH ${i}`);
         await Promise.all(zonesWithRestrictions.slice(i, i + batchSize).map(async (zone) => {
           const z = await this.zoneAlerteComputedRepository.findOne({
             where: {
