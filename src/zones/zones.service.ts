@@ -148,46 +148,51 @@ export class ZonesService {
 
       this.logger.log('LOADING ALL ZONES & COMMUNES - MAPPING RESTRICTION');
 
-      await Promise.all(zonesWithRestrictions.map(async (zone) => {
-        this.logger.log('LOADING ALL ZONES & COMMUNES - MAPPING RESTRICTION', zone.id);
-        const z = await this.zoneAlerteComputedRepository.findOne({
-          where: {
-            id: zone.id,
-            restriction: {
-              arreteRestriction: {
-                statut: 'publie',
+      const batchSize = 500;
+      for (let i = 0; i < zonesWithRestrictions.length; i += batchSize) {
+        this.logger.log(`LOADING ALL ZONES & COMMUNES - MAPPING RESTRICTION - BATCH ${i}`);
+        await Promise.all(zonesWithRestrictions.slice(i, i + batchSize).map(async (zone) => {
+          const z = await this.zoneAlerteComputedRepository.findOne({
+            where: {
+              id: zone.id,
+              restriction: {
+                arreteRestriction: {
+                  statut: 'publie',
+                },
               },
             },
-          },
-          relations: [
-            'restriction',
-            'restriction.arreteRestriction',
-            'restriction.arreteRestriction.fichier',
-            'restriction.arreteRestriction.departement',
-            'restriction.arreteCadre',
-            'restriction.arreteCadre.fichier',
-            'restriction.usages',
-            'restriction.usages.thematique',
-          ],
-        });
-        zone.restriction = z ? z.restriction : [];
-        return zone;
-      }));
+            relations: [
+              'restriction',
+              'restriction.arreteRestriction',
+              'restriction.arreteRestriction.fichier',
+              'restriction.arreteRestriction.departement',
+              'restriction.arreteCadre',
+              'restriction.arreteCadre.fichier',
+              'restriction.usages',
+              'restriction.usages.thematique',
+            ],
+          });
+          zone.restriction = z ? z.restriction : [];
+          return zone;
+        }));
+      }
 
       this.logger.log('LOADING ALL ZONES & COMMUNES - MAPPING COMMUNES');
 
-      await Promise.all(zonesWithRestrictions.map(async (zone) => {
-        const z = await this.zoneAlerteComputedRepository.findOne({
-          where: {
-            id: zone.id,
-          },
-          relations: [
-            'communes',
-          ],
-        });
-        zone.communes = z ? z.communes : [];
-        return zone;
-      }));
+      for (let i = 0; i < zonesWithRestrictions.length; i += batchSize) {
+        await Promise.all(zonesWithRestrictions.slice(i, i + batchSize).map(async (zone) => {
+          const z = await this.zoneAlerteComputedRepository.findOne({
+            where: {
+              id: zone.id,
+            },
+            relations: [
+              'communes',
+            ],
+          });
+          zone.communes = z ? z.communes : [];
+          return zone;
+        }));
+      }
 
       // @ts-ignore
       this.allZonesWithRestrictions = zonesWithRestrictions.map(z => {
