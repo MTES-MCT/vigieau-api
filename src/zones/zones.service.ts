@@ -125,6 +125,7 @@ export class ZonesService {
   }
 
   async loadAllZones() {
+    this.loading = true;
     try {
       this.logger.log('LOADING ALL ZONES & COMMUNES - BEGIN');
       // @ts-ignore
@@ -145,7 +146,10 @@ export class ZonesService {
         .getRawMany();
       this.lastUpdate = new Date();
 
+      this.logger.log('LOADING ALL ZONES & COMMUNES - MAPPING RESTRICTION');
+
       await Promise.all(zonesWithRestrictions.map(async (zone) => {
+        this.logger.log('LOADING ALL ZONES & COMMUNES - MAPPING RESTRICTION', zone.id);
         const z = await this.zoneAlerteComputedRepository.findOne({
           where: {
             id: zone.id,
@@ -169,6 +173,8 @@ export class ZonesService {
         zone.restriction = z ? z.restriction : [];
         return zone;
       }));
+
+      this.logger.log('LOADING ALL ZONES & COMMUNES - MAPPING COMMUNES');
 
       await Promise.all(zonesWithRestrictions.map(async (zone) => {
         const z = await this.zoneAlerteComputedRepository.findOne({
