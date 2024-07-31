@@ -12,7 +12,7 @@ export class UsageService {
               private readonly usageFeedbackRepository: Repository<UsageFeedback>) {
   }
 
-  async feedback(usageId: number) {
+  async feedback(usageId: number, feedback: string) {
     const usage = await this.usageRepository.findOne({
       select: {
         id: true,
@@ -29,8 +29,8 @@ export class UsageService {
           niveauGravite: true,
           arreteRestriction: {
             id: true,
-          }
-        }
+          },
+        },
       },
       relations: ['thematique', 'restriction', 'restriction.arreteRestriction'],
       where: { id: usageId },
@@ -61,9 +61,10 @@ export class UsageService {
       usageThematique: usage.thematique.nom,
       usageDescription: description,
       arreteRestriction: {
-        id: usage.restriction.arreteRestriction.id
-      }
-    }
+        id: usage.restriction.arreteRestriction.id,
+      },
+      feedback: feedback,
+    };
     return this.usageFeedbackRepository.save(usageFeedback);
   }
 }
