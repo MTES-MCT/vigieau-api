@@ -12,6 +12,7 @@ import {
 import { ArreteRestriction } from './arrete_restriction.entity';
 import { Region } from './region.entity';
 import { StatisticDepartement } from '../../data/entities/statistic_departement.entity';
+import { BassinVersant } from './bassin_versant.entity';
 
 @Entity()
 export class Departement extends BaseEntity {
@@ -33,6 +34,9 @@ export class Departement extends BaseEntity {
 
   @ManyToOne(() => Region, (region) => region.departements)
   region: Region;
+
+  @ManyToMany(() => BassinVersant, (bassinVersant) => bassinVersant.departements)
+  bassinsVersants: BassinVersant[];
 
   // @OneToMany(() => Commune, (communes) => communes.departement)
   // communes: Commune[];

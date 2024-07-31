@@ -12,7 +12,30 @@ export class ArretesRestrictionsService {
               private readonly arreteRestrictionRepository: Repository<ArreteRestriction>) {
   }
 
-  async getByDate(date?: string) {
+  async getByDate(date?: string, bassinVersant?: string, region?: string, departement?: string) {
+    const whereClause: any = {
+      statut: In(['publie', 'abroge']),
+      dateDebut: LessThanOrEqual(date),
+    };
+    if (bassinVersant) {
+      whereClause.departement = {
+        bassinVersant: {
+          id: bassinVersant,
+        },
+      };
+    }
+    if (region) {
+      whereClause.departement = {
+        region: {
+          id: region,
+        },
+      };
+    }
+    if (departement) {
+      whereClause.departement = {
+        id: departement,
+      };
+    }
     const ars: any[] = await this.arreteRestrictionRepository.find({
       select: {
         id: true,
@@ -39,13 +62,11 @@ export class ArretesRestrictionsService {
       relations: ['departement', 'fichier', 'restrictions', 'restrictions.zonesAlerteComputed'],
       where: [
         {
-          statut: In(['publie', 'abroge']),
-          dateDebut: LessThanOrEqual(date),
+          ...whereClause,
           dateFin: MoreThanOrEqual(date),
         },
         {
-          statut: In(['publie', 'abroge']),
-          dateDebut: LessThanOrEqual(date),
+          ...whereClause,
           dateFin: IsNull(),
         },
       ],
