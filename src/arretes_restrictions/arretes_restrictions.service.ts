@@ -19,7 +19,7 @@ export class ArretesRestrictionsService {
     };
     if (bassinVersant) {
       whereClause.departement = {
-        bassinVersant: {
+        bassinsVersants: {
           id: bassinVersant,
         },
       };

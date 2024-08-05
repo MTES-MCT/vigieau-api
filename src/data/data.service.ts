@@ -157,7 +157,7 @@ export class DataService {
     const statisticsDepartement = await this.statisticDepartementRepository.find({
       relations: ['departement'],
     });
-    this.departements = await this.departementRepository
+    this.departements = (await this.departementRepository
       .createQueryBuilder('departement')
       .select('departement.id', 'id')
       .addSelect('departement.code', 'code')
@@ -165,19 +165,30 @@ export class DataService {
       .addSelect(
         'ST_Area(departement.geom::geography)/1000000',
         'area')
+      .addSelect('ST_Extent(departement.geom)', 'bounds')
+      .groupBy('id')
       .orderBy('nom', 'ASC')
-      .getRawMany();
+      .getRawMany()).map(d => {
+      const bounds = {
+        minLat: d.bounds.split('(')[1].split(' ')[0],
+        maxLat: d.bounds.split(',')[1].split(' ')[0],
+        minLong: d.bounds.split(' ')[1].split(',')[0],
+        maxLong: d.bounds.split(' ')[2].split(')')[0],
+      };
+      d.bounds = bounds;
+      return d;
+    });
     this.regions = await this.regionRepository.find({
       relations: ['departements'],
       order: {
-        nom: 'ASC'
-      }
+        nom: 'ASC',
+      },
     });
     this.bassinsVersants = await this.bassinVersantRepository.find({
       relations: ['departements'],
       order: {
-        nom: 'ASC'
-      }
+        nom: 'ASC',
+      },
     });
     this.fullArea = this.departements.reduce((acc, d) => acc + d.area, 0);
     this.metropoleArea = this.departements.filter(d => d.code.length < 3).reduce((acc, d) => acc + d.area, 0);
@@ -207,6 +218,7 @@ export class DataService {
 
 
   computeDataArea() {
+    this.logger.log('COMPUTE DATA AREA');
     this.dataArea = this.data.map(data => {
       return {
         date: data.date,
@@ -259,6 +271,7 @@ export class DataService {
   }
 
   computeDataDepartement() {
+    this.logger.log('COMPUTE DATA DEPARTEMENT');
     const dataToReturn = [];
     this.data.forEach(d => {
       const tmp = {
@@ -299,23 +312,36 @@ export class DataService {
         return {
           id: b.id,
           code: b.code,
-          nom: b.nom
-        }
+          nom: b.nom,
+          departements: b.departements.map(d => {
+            return {
+              id: d.id,
+              code: d.code,
+            };
+          }),
+        };
       }),
       regions: this.regions.filter(r => r.departements && r.departements.length > 0).map(r => {
         return {
           id: r.id,
           code: r.code,
-          nom: r.nom
-        }
+          nom: r.nom,
+          departements: r.departements.map(d => {
+            return {
+              id: d.id,
+              code: d.code,
+            };
+          }),
+        };
       }),
       departements: this.departements.map(d => {
         return {
           id: d.id,
           code: d.code,
-          nom: d.nom
-        }
-      })
-    }
+          nom: d.nom,
+          bounds: d.bounds,
+        };
+      }),
+    };
   }
 }
