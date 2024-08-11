@@ -43,6 +43,7 @@ export class ArretesRestrictionsService {
         dateDebut: true,
         dateFin: true,
         dateSignature: true,
+        statut: true,
         departement: {
           code: true,
           nom: true,
@@ -52,6 +53,15 @@ export class ArretesRestrictionsService {
           url: true,
           size: true,
         },
+        arretesCadre: {
+          id: true,
+          numero: true,
+          dateDebut: true,
+          dateFin: true,
+          fichier: {
+            url: true,
+          },
+        },
         restrictions: {
           niveauGravite: true,
           zonesAlerteComputed: {
@@ -59,7 +69,14 @@ export class ArretesRestrictionsService {
           },
         },
       },
-      relations: ['departement', 'fichier', 'restrictions', 'restrictions.zonesAlerteComputed'],
+      relations: [
+        'departement',
+        'fichier',
+        'restrictions',
+        'restrictions.zonesAlerteComputed',
+        'arretesCadre',
+        'arretesCadre.fichier',
+      ],
       where: [
         {
           ...whereClause,
