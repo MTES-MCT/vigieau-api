@@ -8,6 +8,8 @@ import moment from 'moment';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { Region } from '../zones/entities/region.entity';
 import { BassinVersant } from '../zones/entities/bassin_versant.entity';
+import { StatisticCommune } from './entities/statistic_commune.entity';
+import { Commune } from '../zones/entities/commune.entity';
 
 @Injectable()
 export class DataService {
@@ -16,6 +18,8 @@ export class DataService {
   data: any;
   dataArea: any;
   dataDepartement: any;
+  dataCommune: any;
+  communes: any[];
   departements: any[];
   regions: Region[];
   bassinsVersants: BassinVersant[];
@@ -26,6 +30,10 @@ export class DataService {
 
   constructor(@InjectRepository(StatisticDepartement)
               private readonly statisticDepartementRepository: Repository<StatisticDepartement>,
+              @InjectRepository(StatisticCommune)
+              private readonly statisticCommuneRepository: Repository<StatisticCommune>,
+              @InjectRepository(Commune)
+              private readonly communeRepository: Repository<Commune>,
               @InjectRepository(Departement)
               private readonly departementRepository: Repository<Departement>,
               @InjectRepository(Region)
@@ -33,7 +41,6 @@ export class DataService {
               @InjectRepository(BassinVersant)
               private readonly bassinVersantRepository: Repository<BassinVersant>,
   ) {
-    this.loadData();
   }
 
   areaFindByDate(dateDebut?: string, dateFin?: string, bassinVersant?: string, region?: string, departement?: string) {
@@ -151,11 +158,43 @@ export class DataService {
     return dataDepartementFiltered;
   }
 
+  duree() {
+    return this.dataCommune;
+  }
+
   @Cron(CronExpression.EVERY_3_HOURS)
   async loadData() {
     this.logger.log('LOAD DATA');
-    const statisticsDepartement = await this.statisticDepartementRepository.find({
-      relations: ['departement'],
+    await this.loadRefData();
+    this.logMemoryUsage();
+
+    this.data = [];
+    const endDate = moment();
+    for (let m = moment(this.beginDate, 'YYYY-MM-DD'); m.diff(endDate, 'days', true) <= 0; m.add(1, 'days')) {
+      const d = {
+        date: m.format('YYYY-MM-DD'),
+        departements: [],
+        communes: [],
+      };
+      this.data.push(d);
+    }
+
+    await this.loadDepartementData();
+    this.data = [];
+
+    await this.loadCommuneData();
+  }
+
+  async loadRefData() {
+    this.communes = await this.communeRepository.find({
+      select: {
+        id: true,
+        code: true,
+        nom: true,
+      },
+      order: {
+        code: 'ASC',
+      },
     });
     this.departements = (await this.departementRepository
       .createQueryBuilder('departement')
@@ -192,45 +231,77 @@ export class DataService {
     });
     this.fullArea = this.departements.reduce((acc, d) => acc + d.area, 0);
     this.metropoleArea = this.departements.filter(d => d.code.length < 3).reduce((acc, d) => acc + d.area, 0);
+  }
 
-    const endDate = moment();
-    this.data = [];
-    for (let m = moment(this.beginDate, 'YYYY-MM-DD'); m.diff(endDate, 'days', true) <= 0; m.add(1, 'days')) {
-      const d = {
-        date: m.format('YYYY-MM-DD'),
-        restrictions: [],
-      };
-      statisticsDepartement.forEach((statisticDepartement) => {
-        const restriction = statisticDepartement.restrictions.find(r => r.date === m.format('YYYY-MM-DD'));
-        if (restriction) {
-          d.restrictions.push({
-            ...{ departement: statisticDepartement.departement.code },
-            ...restriction,
-          });
-        }
-      });
-      this.data.push(d);
+  async loadDepartementData() {
+    let statisticsDepartement = await this.statisticDepartementRepository.find({
+      relations: ['departement'],
+    });
+
+    for (const statisticDepartement of statisticsDepartement) {
+      for (const restriction of statisticDepartement.restrictions) {
+        const d = this.data.find(x => x.date === restriction.date);
+        d.departements.push({
+          ...{ departement: statisticDepartement.departement.code },
+          ...restriction,
+        });
+      }
     }
 
     this.computeDataArea();
+    this.logMemoryUsage();
+
     this.computeDataDepartement();
+    this.logMemoryUsage();
+
+    for (const d of this.data) {
+      d.departements = [];
+    }
   }
 
+  async loadCommuneData() {
+    this.logger.log('COMPUTE DATA COMMUNE - BEGIN');
+    this.dataCommune = [];
+    const communesCount = await this.statisticCommuneRepository.count();
+    for (let i = 0; i < communesCount; i = i + 1000) {
+      for (const d of this.data) {
+        d.communes = [];
+      }
+      let statisticsCommune = await this.statisticCommuneRepository.find({
+        select: {
+          id: true,
+          restrictionsByMonth: true,
+          commune: {
+            id: true,
+            code: true,
+          },
+        },
+        relations: ['commune'],
+        take: 1000,
+        skip: i,
+      });
+
+      this.computeDataCommune(statisticsCommune);
+    }
+    this.logger.log('COMPUTE DATA COMMUNE - END');
+    this.logMemoryUsage();
+  }
 
   computeDataArea() {
     this.logger.log('COMPUTE DATA AREA');
-    this.dataArea = this.data.map(data => {
-      return {
+    this.dataArea = [];
+    for (const data of this.data) {
+      this.dataArea.push({
         date: data.date,
-        ESO: this.filterRestrictions(data.restrictions, 'SOU', this.fullArea),
-        ESU: this.filterRestrictions(data.restrictions, 'SUP', this.fullArea),
-        AEP: this.filterRestrictions(data.restrictions, 'AEP', this.fullArea),
+        ESO: this.filterRestrictions(data.departements, 'SOU', this.fullArea),
+        ESU: this.filterRestrictions(data.departements, 'SUP', this.fullArea),
+        AEP: this.filterRestrictions(data.departements, 'AEP', this.fullArea),
         bassinsVersants: this.bassinsVersants.map(b => {
           const depFiltered = this.departements.filter(d => b.departements.some(dep => dep.id === d.id));
           const area = depFiltered.reduce((acc, d) => acc + d.area, 0);
-          const restrictions = data.restrictions.filter(r => depFiltered.some(dep => dep.code === r.departement));
+          const restrictions = data.departements.filter(r => depFiltered.some(dep => dep.code === r.departement));
           return {
-            ...b,
+            id: b.id,
             ESO: this.filterRestrictions(restrictions, 'SOU', area),
             ESU: this.filterRestrictions(restrictions, 'SUP', area),
             AEP: this.filterRestrictions(restrictions, 'AEP', area),
@@ -239,9 +310,9 @@ export class DataService {
         regions: this.regions.map(r => {
           const depFiltered = this.departements.filter(d => r.departements.some(dep => dep.id === d.id));
           const area = depFiltered.reduce((acc, d) => acc + d.area, 0);
-          const restrictions = data.restrictions.filter(r => depFiltered.some(dep => dep.code === r.departement));
+          const restrictions = data.departements.filter(r => depFiltered.some(dep => dep.code === r.departement));
           return {
-            ...r,
+            id: r.id,
             ESO: this.filterRestrictions(restrictions, 'SOU', area),
             ESU: this.filterRestrictions(restrictions, 'SUP', area),
             AEP: this.filterRestrictions(restrictions, 'AEP', area),
@@ -249,16 +320,16 @@ export class DataService {
         }),
         departements: this.departements.map(dep => {
           const area = dep.area;
-          const restrictions = data.restrictions.filter(r => dep.code === r.departement);
+          const restrictions = data.departements.filter(r => dep.code === r.departement);
           return {
-            ...dep,
+            id: dep.id,
             ESO: this.filterRestrictions(restrictions, 'SOU', area),
             ESU: this.filterRestrictions(restrictions, 'SUP', area),
             AEP: this.filterRestrictions(restrictions, 'AEP', area),
           };
         }),
-      };
-    });
+      });
+    }
   }
 
   filterRestrictions(restrictions: any, zoneType: string, areaPercentage: number) {
@@ -272,8 +343,8 @@ export class DataService {
 
   computeDataDepartement() {
     this.logger.log('COMPUTE DATA DEPARTEMENT');
-    const dataToReturn = [];
-    this.data.forEach(d => {
+    this.dataDepartement = [];
+    for (const d of this.data) {
       const tmp = {
         date: d.date,
         departements: [],
@@ -281,12 +352,27 @@ export class DataService {
       this.departements.forEach(departement => {
         tmp.departements.push({
           code: departement.code,
-          niveauGravite: this.findMaxNiveauGravite(d.restrictions, departement.code),
+          niveauGravite: this.findMaxNiveauGravite(d.departements, departement.code),
         });
       });
-      dataToReturn.push(tmp);
-    });
-    this.dataDepartement = dataToReturn;
+      this.dataDepartement.push(tmp);
+    }
+  }
+
+  computeDataCommune(statisticsCommune) {
+    const communesFiltered = this.communes.filter(c => statisticsCommune.some(sc => sc.commune.code === c.code));
+    this.logger.log('COMMUNES FILTERED', communesFiltered.length);
+    for (const sc of statisticsCommune) {
+      this.dataCommune.push({
+        code: sc.commune.code,
+        restrictions: sc.restrictionsByMonth.map(r => {
+          return {
+            d: r.date,
+            p: r.ponderation,
+          }
+        })
+      })
+    }
   }
 
   findMaxNiveauGravite(restrictions: any[], departementCode: string) {
@@ -343,5 +429,23 @@ export class DataService {
         };
       }),
     };
+  }
+
+  // TMP
+  formatMemoryUsage(data) {
+    return `${Math.round(data / 1024 / 1024 * 100) / 100} MB`;
+  }
+
+  logMemoryUsage() {
+    const memoryData = process.memoryUsage();
+
+    const memoryUsage = {
+      rss: `${this.formatMemoryUsage(memoryData.rss)} -> Resident Set Size - total memory allocated for the process execution`,
+      heapTotal: `${this.formatMemoryUsage(memoryData.heapTotal)} -> total size of the allocated heap`,
+      heapUsed: `${this.formatMemoryUsage(memoryData.heapUsed)} -> actual memory used during the execution`,
+      external: `${this.formatMemoryUsage(memoryData.external)} -> V8 external memory`,
+    };
+
+    this.logger.log(memoryUsage);
   }
 }

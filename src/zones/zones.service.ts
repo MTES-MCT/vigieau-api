@@ -9,6 +9,8 @@ import { ZoneAlerteComputed } from './entities/zone_alerte_computed.entity';
 import { DepartementsService } from '../departements/departements.service';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { ZoneDto } from './dto/zone.dto';
+import { StatisticsService } from '../statistics/statistics.service';
+import { DataService } from '../data/data.service';
 
 @Injectable()
 export class ZonesService {
@@ -24,8 +26,10 @@ export class ZonesService {
 
   constructor(@InjectRepository(ZoneAlerteComputed)
               private readonly zoneAlerteComputedRepository: Repository<ZoneAlerteComputed>,
-              private readonly departementsService: DepartementsService) {
-    this.loadAllZones();
+              private readonly departementsService: DepartementsService,
+              private readonly statisticsService: StatisticsService,
+              private readonly dataService: DataService) {
+    this.loadAllZones(true);
   }
 
   find(queryLon?: string, queryLat?: string, commune?: string, profil?: string, zoneType?: string) {
@@ -124,7 +128,7 @@ export class ZonesService {
     return zones;
   }
 
-  async loadAllZones() {
+  async loadAllZones(onInit = false) {
     this.loading = true;
     try {
       this.logger.log('LOADING ALL ZONES & COMMUNES - BEGIN');
@@ -148,7 +152,7 @@ export class ZonesService {
 
       this.logger.log('LOADING ALL ZONES & COMMUNES - MAPPING RESTRICTION');
 
-      const batchSize = 100;
+      const batchSize = 1000;
       for (let i = 0; i < zonesWithRestrictions.length; i += batchSize) {
         this.logger.log(`LOADING ALL ZONES & COMMUNES - MAPPING RESTRICTION - BATCH ${i}`);
         await Promise.all(zonesWithRestrictions.slice(i, i + batchSize).map(async (zone) => {
@@ -289,6 +293,10 @@ export class ZonesService {
     } catch (e) {
       this.loading = false;
       this.logger.error('LOADING ALL ZONES & COMMUNES - ERROR', e);
+    }
+    if(onInit) {
+      this.statisticsService.loadStatistics();
+      this.dataService.loadData();
     }
   }
 

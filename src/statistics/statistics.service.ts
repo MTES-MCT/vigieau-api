@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { forwardRef, Inject, Injectable } from '@nestjs/common';
 import process from 'node:process';
 import { HttpService } from '@nestjs/axios';
 import { firstValueFrom } from 'rxjs';
@@ -21,8 +21,8 @@ export class StatisticsService {
               private readonly statisticRepository: Repository<Statistic>,
               private readonly httpService: HttpService,
               private readonly departementsService: DepartementsService,
+              @Inject(forwardRef(() => SubscriptionsService))
               private readonly subscriptionsService: SubscriptionsService) {
-    this.loadStatistics();
   }
 
   findAll() {

@@ -3,12 +3,13 @@ import {
   Column,
   CreateDateColumn,
   Entity, ManyToMany,
-  ManyToOne, OneToMany,
+  OneToMany,
   Polygon,
   PrimaryGeneratedColumn,
 } from 'typeorm';
 import { Restriction } from './restriction.entity';
 import { ZoneAlerteComputed } from './zone_alerte_computed.entity';
+import { StatisticCommune } from '../../data/entities/statistic_commune.entity';
 
 @Entity()
 export class Commune extends BaseEntity {
@@ -46,4 +47,7 @@ export class Commune extends BaseEntity {
 
   @CreateDateColumn()
   createdAt: Date;
+
+  @OneToMany(() => StatisticCommune, (statisticCommune) => statisticCommune.commune)
+  statisticCommune: StatisticCommune[];
 }

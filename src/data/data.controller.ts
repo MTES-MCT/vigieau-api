@@ -83,4 +83,10 @@ export class DataController {
               @Query('departement') departement?: string) {
     return this.dataService.departementFindByDate(dateDebut, dateFin, bassinVersant, region, departement);
   }
+
+  @Get('duree')
+  @ApiOperation({ summary: 'Récupérer la pondération par commune concernée par des restrictions' })
+  duree() {
+    return this.dataService.duree();
+  }
 }
