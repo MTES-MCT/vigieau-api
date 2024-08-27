@@ -162,6 +162,26 @@ export class DataService {
     return this.dataCommune;
   }
 
+  commune(code: string) {
+    return this.statisticCommuneRepository.findOne({
+      select: {
+        id: true,
+        restrictions: true,
+        commune: {
+          id: true,
+          code: true,
+          nom: true,
+        }
+      },
+      relations: ['commune'],
+      where: {
+        commune: {
+          code: code
+        }
+      }
+    });
+  }
+
   @Cron(CronExpression.EVERY_3_HOURS)
   async loadData() {
     this.logger.log('LOAD DATA');

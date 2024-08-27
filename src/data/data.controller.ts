@@ -1,4 +1,4 @@
-import { Controller, Get, Query } from '@nestjs/common';
+import { Controller, Get, Param, Query } from '@nestjs/common';
 import { ApiExcludeController, ApiOperation, ApiQuery } from '@nestjs/swagger';
 import { DataService } from './data.service';
 
@@ -88,5 +88,11 @@ export class DataController {
   @ApiOperation({ summary: 'Récupérer la pondération par commune concernée par des restrictions' })
   duree() {
     return this.dataService.duree();
+  }
+
+  @Get('commune/:codeInsee')
+  @ApiOperation({ summary: 'Récupérer les stats journalières d\'une commune' })
+  commune(@Param('codeInsee') codeInsee: string) {
+    return this.dataService.commune(codeInsee);
   }
 }
