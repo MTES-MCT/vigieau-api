@@ -1,7 +1,6 @@
 import { Controller, Get, Param, Query } from '@nestjs/common';
 import { ZonesService } from './zones.service';
 import { ApiOperation, ApiQuery, ApiResponse } from '@nestjs/swagger';
-import { DepartementDto } from '../departements/dto/departement.dto';
 import { ZoneDto } from './dto/zone.dto';
 
 @Controller('zones')

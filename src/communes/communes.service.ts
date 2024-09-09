@@ -32,6 +32,30 @@ export class CommunesService {
     this.logger.log('LOADING COMMUNES - END');
   }
 
+  async findArretesMunicipaux() {
+    this.logger.log('LOADING COMMUNES ARRETES MUNICIPAUX');
+    return this.communeRepository.find({
+      select: {
+        code: true,
+        arretesMunicipaux: {
+          id: true,
+          fichier: {
+            url: true,
+          },
+        },
+      },
+      relations: [
+        'arretesMunicipaux',
+        'arretesMunicipaux.fichier',
+      ],
+      where: {
+        arretesMunicipaux: {
+          statut: 'publie',
+        },
+      },
+    });
+  }
+
   normalizeCodeCommune(codeCommune) {
     if (['75101', '75102', '75103', '75104', '75105', '75106', '75107', '75108', '75109', '75110', '75111', '75112', '75113', '75114', '75115', '75116', '75117', '75118', '75119', '75120'].includes(codeCommune)) {
       return '75056';

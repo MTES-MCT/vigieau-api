@@ -11,12 +11,16 @@ import { Cron, CronExpression } from '@nestjs/schedule';
 import { ZoneDto } from './dto/zone.dto';
 import { StatisticsService } from '../statistics/statistics.service';
 import { DataService } from '../data/data.service';
+import { ArreteMunicipal } from './entities/arrete_municipal.entity';
+import { CommunesService } from '../communes/communes.service';
+import { Commune } from './entities/commune.entity';
 
 @Injectable()
 export class ZonesService {
   private readonly logger = new VigieauLogger('ZonesService');
 
   allZonesWithRestrictions: ZoneDto[] = [];
+  communeArretesMunicipaux: Commune[];
   zonesFeatures: any = [];
   zonesIndex: any = {};
   zonesCommunesIndex: any = {};
@@ -28,7 +32,8 @@ export class ZonesService {
               private readonly zoneAlerteComputedRepository: Repository<ZoneAlerteComputed>,
               private readonly departementsService: DepartementsService,
               private readonly statisticsService: StatisticsService,
-              private readonly dataService: DataService) {
+              private readonly dataService: DataService,
+              private readonly communesService: CommunesService) {
     this.loadAllZones(true);
   }
 
@@ -45,20 +50,12 @@ export class ZonesService {
       }
 
       const zones = this.searchZonesByLonLat({ lon, lat });
-      return this.formatZones(zones, profil, zoneType);
+      return this.formatZones(zones, profil, zoneType, commune);
     }
 
     if (commune) {
       const zones = this.searchZonesByCommune(commune);
-
-      if (zones.length === 0) {
-        throw new HttpException(
-          `Aucune zone d’alerte sur cette commune.`,
-          HttpStatus.NOT_FOUND,
-        );
-      }
-
-      return this.formatZones(zones, profil, zoneType);
+      return this.formatZones(zones, profil, zoneType, commune);
     }
 
     throw new HttpException(
@@ -287,6 +284,8 @@ export class ZonesService {
       this.zonesIndex = keyBy(this.allZonesWithRestrictions, 'id');
       this.zoneTree.finish();
 
+      this.communeArretesMunicipaux = await this.communesService.findArretesMunicipaux();
+
       this.loading = false;
       this.logger.log('LOADING ALL ZONES & COMMUNES - END');
       this.departementsService.loadSituation(this.allZonesWithRestrictions);
@@ -294,26 +293,54 @@ export class ZonesService {
       this.loading = false;
       this.logger.error('LOADING ALL ZONES & COMMUNES - ERROR', e);
     }
-    if(onInit) {
+    if (onInit) {
       this.statisticsService.loadStatistics();
       this.dataService.loadData();
     }
   }
 
-  formatZones(zones: any[], profil?: string, zoneType?: string) {
+  formatZones(zones: any[], profil?: string, zoneType?: string, commune?: string) {
     let zonesToReturn = zones;
+    const communeArreteMunicipal = commune ?
+      this.communeArretesMunicipaux?.find(c => c.code === commune)?.arretesMunicipaux[0]
+      : null;
 
     if (zoneType) {
       const toReturn = zones.find(z => z.type === zoneType);
-      return this.formatZone(toReturn, profil);
+      return this.formatZone(toReturn, profil, communeArreteMunicipal);
     }
 
-    return zonesToReturn?.map(z => this.formatZone(z, profil));
+    const zonesFormated = zonesToReturn?.map(z => this.formatZone(z, profil, communeArreteMunicipal));
+
+    if(communeArreteMunicipal?.fichier?.url) {
+      const zonesTypes = ['AEP', 'SOU', 'SUP'];
+      zonesTypes.forEach(zoneType => {
+        if(zonesFormated.findIndex(z => z.type === zoneType) < 0) {
+          zonesFormated.push({
+            id: null,
+            type: zoneType,
+            arreteMunicipalCheminFichier: communeArreteMunicipal.fichier.url,
+          })
+        }
+      });
+    }
+
+    return zonesFormated;
   }
 
-  formatZone(zone: any, profil?: string) {
+  formatZone(zone: any, profil?: string, arreteMunicipal?: ArreteMunicipal) {
     if (!zone) {
+      if (arreteMunicipal?.fichier?.url) {
+        return {
+          id: null,
+          arreteMunicipalCheminFichier: arreteMunicipal.fichier.url,
+        };
+      }
       return zone;
+    }
+
+    if (arreteMunicipal?.fichier?.url) {
+      zone.arreteMunicipalCheminFichier = arreteMunicipal.fichier.url;
     }
 
     if (profil) {

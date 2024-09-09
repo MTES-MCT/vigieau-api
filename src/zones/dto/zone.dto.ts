@@ -51,6 +51,9 @@ export class ZoneDto {
   @ApiProperty()
   arrete: ArreteDto;
 
+  @ApiProperty({ example: 'https://example.com/arrete.pdf', description: "Lien du PDF de l'arrêté municipal" })
+  arreteMunicipalCheminFichier: string;
+
   @ApiProperty({ type: [UsageDto] })
   usages: UsageDto[];
 }

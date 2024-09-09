@@ -8,6 +8,7 @@ import {
 } from 'typeorm';
 import { ArreteRestriction } from './arrete_restriction.entity';
 import { ArreteCadre } from './arrete_cadre.entity';
+import { ArreteMunicipal } from './arrete_municipal.entity';
 
 @Entity()
 export class Fichier extends BaseEntity {
@@ -34,6 +35,12 @@ export class Fichier extends BaseEntity {
     (arreteRestriction) => arreteRestriction.fichier,
   )
   arreteRestriction: ArreteRestriction;
+
+  @OneToOne(
+    () => ArreteMunicipal,
+    (arreteMunicipal) => arreteMunicipal.fichier,
+  )
+  arreteMunicipal: ArreteMunicipal;
 
   @Column({ default: false })
   migrate: boolean;

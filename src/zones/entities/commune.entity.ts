@@ -10,6 +10,7 @@ import {
 import { Restriction } from './restriction.entity';
 import { ZoneAlerteComputed } from './zone_alerte_computed.entity';
 import { StatisticCommune } from '../../data/entities/statistic_commune.entity';
+import { ArreteMunicipal } from './arrete_municipal.entity';
 
 @Entity()
 export class Commune extends BaseEntity {
@@ -41,6 +42,11 @@ export class Commune extends BaseEntity {
     persistence: false,
   })
   zonesAlerteComputed: ZoneAlerteComputed[];
+
+  @ManyToMany(() => ArreteMunicipal, (arreteMunicipal) => arreteMunicipal.communes, {
+    persistence: false,
+  })
+  arretesMunicipaux: ArreteMunicipal[];
 
   @Column({ nullable: false, default: false })
   disabled: boolean;
