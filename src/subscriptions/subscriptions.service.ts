@@ -76,20 +76,20 @@ export class SubscriptionsService {
       subscription.situation = {};
     }
 
+    const whereClause = subscription.commune ? {
+      email: subscription.email,
+      commune: subscription.commune,
+      idAdresse: subscription.idAdresse,
+    } : {
+      lon: subscription.lon,
+      lat: subscription.lat,
+    }
     const subscriptionExists = await this.abonnementMailRepository.exists({
-      where: {
-        email: subscription.email,
-        commune: subscription.commune,
-        idAdresse: subscription.idAdresse,
-      },
+      where: whereClause,
     });
     if (subscriptionExists) {
       const changes = pick(subscription, 'profil', 'typesEau');
-      await this.abonnementMailRepository.update({
-        email: subscription.email,
-        commune: subscription.commune,
-        idAdresse: subscription.idAdresse,
-      }, changes);
+      await this.abonnementMailRepository.update(whereClause, changes);
     } else {
       await this.abonnementMailRepository.save(subscription);
 
@@ -275,7 +275,7 @@ export class SubscriptionsService {
             SUP,
             Boolean(subscription.situation?.SUP && subscription.situation.SUP !== SUP),
             SOU,
-              Boolean( subscription.situation?.SOU && subscription.situation.SOU !== SOU),
+            Boolean(subscription.situation?.SOU && subscription.situation.SOU !== SOU),
             subscription.commune,
             subscription.libelleLocalisation,
             subscription.profil,

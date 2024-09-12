@@ -136,16 +136,25 @@ export class DepartementsService {
       return {
         date: s.date,
         departementSituation: departements.map(d => {
-          let niveauGraviteMax = s.departementSituation && s.departementSituation[d.code] ? s.departementSituation[d.code] : null;
+          let niveauGraviteMax = s.departementSituation && s.departementSituation[d.code] ? s.departementSituation[d.code].max : null;
+          let niveauGraviteSupMax = s.departementSituation && s.departementSituation[d.code] ? s.departementSituation[d.code].sup : null;
+          let niveauGraviteSouMax = s.departementSituation && s.departementSituation[d.code] ? s.departementSituation[d.code].sou : null;
+          let niveauGraviteAepMax = s.departementSituation && s.departementSituation[d.code] ? s.departementSituation[d.code].aep : null;
           if (s.date === new Date().toISOString().split('T')[0]) {
             const depZones = currentZones.filter(z => z.departement === d.code);
             niveauGraviteMax = depZones.length > 0 ? Utils.getNiveauInversed(max(depZones.map(z => Utils.getNiveau(z.niveauGravite)))) : null;
+            niveauGraviteSupMax = depZones.filter(z => z.type === 'SUP').length > 0 ? Utils.getNiveauInversed(max(depZones.filter(z => z.type === 'SUP').map(z => Utils.getNiveau(z.niveauGravite)))) : null;
+            niveauGraviteSouMax = depZones.filter(z => z.type === 'SOU').length > 0 ? Utils.getNiveauInversed(max(depZones.filter(z => z.type === 'SOU').map(z => Utils.getNiveau(z.niveauGravite)))) : null;
+            niveauGraviteAepMax = depZones.filter(z => z.type === 'AEP').length > 0 ? Utils.getNiveauInversed(max(depZones.filter(z => z.type === 'AEP').map(z => Utils.getNiveau(z.niveauGravite)))) : null;
           }
           return {
             code: d.code,
             nom: d.nom,
             region: d.region?.nom,
             niveauGraviteMax: niveauGraviteMax,
+            niveauGraviteSupMax: niveauGraviteSupMax,
+            niveauGraviteSouMax: niveauGraviteSouMax,
+            niveauGraviteAepMax: niveauGraviteAepMax,
           };
         }),
       };

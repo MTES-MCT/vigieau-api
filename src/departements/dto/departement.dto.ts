@@ -16,4 +16,25 @@ export class DepartementDto {
     description: 'Niveau de gravité maximum en vigueur sur le département, null si pas de zone d\'alerte en vigueur',
   })
   niveauGraviteMax: string;
+
+  @ApiProperty({
+    enum: ['vigilance', 'alerte', 'alerte_renforcee', 'crise'],
+    example: 'alerte_renforcee',
+    description: 'Niveau de gravité maximum en vigueur sur le département pour les eaux de type superficielle, null si pas de zone d\'alerte en vigueur',
+  })
+  niveauGraviteSupMax: string;
+
+  @ApiProperty({
+    enum: ['vigilance', 'alerte', 'alerte_renforcee', 'crise'],
+    example: 'alerte_renforcee',
+    description: 'Niveau de gravité maximum en vigueur sur le département pour les eaux de type souterraine, null si pas de zone d\'alerte en vigueur',
+  })
+  niveauGraviteSouMax: string;
+
+  @ApiProperty({
+    enum: ['vigilance', 'alerte', 'alerte_renforcee', 'crise'],
+    example: 'alerte_renforcee',
+    description: 'Niveau de gravité maximum en vigueur sur le département pour les eaux potable, null si pas de zone d\'alerte en vigueur. Donnée disponible à partir du 28/04/2024.',
+  })
+  niveauGraviteAepMax: string;
 }
