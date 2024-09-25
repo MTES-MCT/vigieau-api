@@ -302,7 +302,7 @@ export class ZonesService {
   formatZones(zones: any[], profil?: string, zoneType?: string, commune?: string) {
     let zonesToReturn = zones;
     const communeArreteMunicipal = commune ?
-      this.communeArretesMunicipaux?.find(c => c.code === commune)?.arretesMunicipaux[0]
+      this.communeArretesMunicipaux?.find(c => c.code === this.communesService.normalizeCodeCommune(commune))?.arretesMunicipaux[0]
       : null;
 
     if (zoneType) {
