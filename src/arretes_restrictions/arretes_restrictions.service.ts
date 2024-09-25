@@ -99,12 +99,12 @@ export class ArretesRestrictionsService {
       'crise': 4,
     };
     return ars.map(ar => {
-      ar.niveauGraviteMax = ar.restrictions.length > 0 ? ar.restrictions.reduce((acc, restriction) => {
-        if (niveauGravitePriority[restriction.status] > niveauGravitePriority[acc.status]) {
-          return restriction;
+      ar.niveauGraviteMax = null;
+      ar.restrictions?.forEach(r => {
+        if (!ar.niveauGraviteMax || niveauGravitePriority[r.niveauGravite] > niveauGravitePriority[ar.niveauGraviteMax]) {
+          ar.niveauGraviteMax = r.niveauGravite;
         }
-        return acc;
-      }).niveauGravite : null;
+      });
       ar.types = ar.restrictions.map(r => r.zonesAlerteComputed.map(z => z.type)).flat();
       ar.types = [...new Set(ar.types)].sort();
       return ar;
