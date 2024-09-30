@@ -162,8 +162,8 @@ export class DataService {
     return this.dataCommune;
   }
 
-  commune(code: string) {
-    return this.statisticCommuneRepository.findOne({
+  async commune(code: string, dateDebut?: string, dateFin?: string) {
+    const stat = await this.statisticCommuneRepository.findOne({
       select: {
         id: true,
         restrictions: true,
@@ -171,15 +171,24 @@ export class DataService {
           id: true,
           code: true,
           nom: true,
-        }
+        },
       },
       relations: ['commune'],
       where: {
         commune: {
-          code: code
-        }
-      }
+          code: code,
+        },
+      },
     });
+    if (dateDebut && dateFin) {
+      const dateBegin = moment(dateDebut, 'YYYY-MM').startOf('month');
+      const dateEnd = moment(dateFin, 'YYYY-MM').endOf('month');
+      stat.restrictions = stat.restrictions
+        .filter((r: any) => {
+          return moment(r.date, 'YYYY-MM').isSameOrAfter(dateBegin) && moment(r.date, 'YYYY-MM').isSameOrBefore(dateEnd);
+        });
+    }
+    return stat;
   }
 
   @Cron(CronExpression.EVERY_3_HOURS)
@@ -389,9 +398,9 @@ export class DataService {
           return {
             d: r.date,
             p: r.ponderation,
-          }
-        })
-      })
+          };
+        }),
+      });
     }
   }
 

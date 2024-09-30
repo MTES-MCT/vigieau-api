@@ -92,7 +92,20 @@ export class DataController {
 
   @Get('commune/:codeInsee')
   @ApiOperation({ summary: 'Récupérer les stats journalières d\'une commune' })
-  commune(@Param('codeInsee') codeInsee: string) {
-    return this.dataService.commune(codeInsee);
+  @ApiQuery({
+    name: 'dateDebut',
+    description: 'Date de recherche (YYYY-MM), si non précisée c\'est la date du jour qui est prise en compte',
+    required: false,
+  })
+  @ApiQuery({
+    name: 'dateFin',
+    description: 'Date de recherche (YYYY-MM), si non précisée c\'est la date du jour qui est prise en compte',
+    required: false,
+  })
+  commune(@Param('codeInsee') codeInsee: string,
+          @Query('dateDebut') dateDebut?: string,
+          @Query('dateFin') dateFin?: string,
+  ) {
+    return this.dataService.commune(codeInsee, dateDebut, dateFin);
   }
 }
