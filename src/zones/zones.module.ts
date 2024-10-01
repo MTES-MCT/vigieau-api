@@ -16,11 +16,19 @@ import { CommunesModule } from '../communes/communes.module';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([ZoneAlerteComputed, Restriction, Usage, Thematique, ArreteCadre, Fichier, ArreteMunicipal]),
+    TypeOrmModule.forFeature([
+      ZoneAlerteComputed,
+      Restriction,
+      Usage,
+      Thematique,
+      ArreteCadre,
+      Fichier,
+      ArreteMunicipal
+    ]),
     DepartementsModule,
     DataModule,
     StatisticsModule,
-    CommunesModule
+    CommunesModule,
   ],
   controllers: [ZonesController],
   providers: [ZonesService],

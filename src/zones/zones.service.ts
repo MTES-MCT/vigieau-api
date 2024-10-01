@@ -26,6 +26,7 @@ export class ZonesService {
   zonesCommunesIndex: any = {};
   zoneTree;
   lastUpdate = null;
+  lastUpdateAm = null;
   loading = false;
 
   constructor(@InjectRepository(ZoneAlerteComputed)
@@ -33,7 +34,9 @@ export class ZonesService {
               private readonly departementsService: DepartementsService,
               private readonly statisticsService: StatisticsService,
               private readonly dataService: DataService,
-              private readonly communesService: CommunesService) {
+              private readonly communesService: CommunesService,
+              @InjectRepository(ArreteMunicipal)
+              private readonly arreteMunicipalRepository: Repository<ArreteMunicipal>,) {
     this.loadAllZones(true);
   }
 
@@ -284,7 +287,7 @@ export class ZonesService {
       this.zonesIndex = keyBy(this.allZonesWithRestrictions, 'id');
       this.zoneTree.finish();
 
-      this.communeArretesMunicipaux = await this.communesService.findArretesMunicipaux();
+      await this.updateArreteMunicipaux();
 
       this.loading = false;
       this.logger.log('LOADING ALL ZONES & COMMUNES - END');
@@ -370,6 +373,11 @@ export class ZonesService {
     };
   }
 
+  async updateArreteMunicipaux() {
+    this.communeArretesMunicipaux = await this.communesService.findArretesMunicipaux();
+    this.lastUpdateAm = new Date();
+  }
+
   /**
    * Vérification régulière s'il n'y a pas de nouvelles zones
    */
@@ -389,6 +397,25 @@ export class ZonesService {
       .getCount();
     if (count > 0) {
       this.loadAllZones();
+    }
+  }
+
+  /**
+   * Vérification régulière s'il n'y a pas de nouveaaux arrêtés municipaux
+   */
+  @Cron(CronExpression.EVERY_30_SECONDS)
+  async updateArretesMunicipaux() {
+    if (!this.lastUpdateAm) {
+      return;
+    }
+    const count = await this.arreteMunicipalRepository
+      .createQueryBuilder('arrete_municipal')
+      .where({
+        updatedAt: MoreThan(this.lastUpdateAm.toLocaleString('sv')),
+      })
+      .getCount();
+    if (count > 0) {
+      this.updateArreteMunicipaux();
     }
   }
 }
