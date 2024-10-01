@@ -1,7 +1,7 @@
 import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
 import { VigieauLogger } from '../logger/vigieau.logger';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { DataSource, Repository } from 'typeorm';
 import { StatisticDepartement } from './entities/statistic_departement.entity';
 import { Departement } from '../zones/entities/departement.entity';
 import moment from 'moment';
@@ -40,6 +40,7 @@ export class DataService {
               private readonly regionRepository: Repository<Region>,
               @InjectRepository(BassinVersant)
               private readonly bassinVersantRepository: Repository<BassinVersant>,
+              private dataSource: DataSource,
   ) {
   }
 
@@ -166,7 +167,7 @@ export class DataService {
     const stat = await this.statisticCommuneRepository.findOne({
       select: {
         id: true,
-        restrictions: true,
+        restrictions: !dateDebut && !dateFin,
         commune: {
           id: true,
           code: true,
@@ -180,13 +181,17 @@ export class DataService {
         },
       },
     });
-    if (dateDebut && dateFin) {
-      const dateBegin = moment(dateDebut, 'YYYY-MM').startOf('month');
-      const dateEnd = moment(dateFin, 'YYYY-MM').endOf('month');
-      stat.restrictions = stat.restrictions
-        .filter((r: any) => {
-          return moment(r.date, 'YYYY-MM').isSameOrAfter(dateBegin) && moment(r.date, 'YYYY-MM').isSameOrBefore(dateEnd);
-        });
+    if (dateDebut || dateFin) {
+      const dateBegin = dateDebut ? moment(dateDebut, 'YYYY-MM').startOf('month') : moment();
+      const dateEnd = dateFin ? moment(dateFin, 'YYYY-MM').endOf('month') : moment();
+      const r = await this.dataSource.query(`
+      SELECT jsonb_agg(r) as filtered_restrictions
+      FROM statistic_commune,
+  jsonb_array_elements(restrictions) AS r
+      WHERE statistic_commune.id = $1 
+      AND (r->>'date')::date BETWEEN $2 AND $3
+    `, [stat.id, dateBegin.format('YYYY-MM-DD'), dateEnd.format('YYYY-MM-DD')]);
+      stat.restrictions = r[0].filtered_restrictions;
     }
     return stat;
   }

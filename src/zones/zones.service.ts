@@ -411,7 +411,7 @@ export class ZonesService {
     const count = await this.arreteMunicipalRepository
       .createQueryBuilder('arrete_municipal')
       .where({
-        updatedAt: MoreThan(this.lastUpdateAm.toLocaleString('sv')),
+        updated_at: MoreThan(this.lastUpdateAm.toLocaleString('sv')),
       })
       .getCount();
     if (count > 0) {
