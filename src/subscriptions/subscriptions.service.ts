@@ -209,6 +209,8 @@ export class SubscriptionsService {
 
   @Cron(CronExpression.EVERY_DAY_AT_4PM)
   async tryUpdateSituations() {
+    // On force la mise à jour des zones d'alertes avant
+    await this.zonesService.loadAllZones();
     const canRun = await this.cronService.askForLock('emails');
     if (!canRun) {
       return;
