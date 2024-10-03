@@ -119,6 +119,7 @@ export class DataService {
       && (dateDebut ? moment(d.date, 'YYYY-MM-DD').isSameOrAfter(moment(dateDebut, 'YYYY-MM-DD'), 'day') : true)
       && (dateFin ? moment(d.date, 'YYYY-MM-DD').isSameOrBefore(moment(dateFin, 'YYYY-MM-DD'), 'day') : true),
     );
+    dataDepartementFiltered = structuredClone(dataDepartementFiltered);
     let departementsToFilter = [];
     if (bassinVersant) {
       const b = this.bassinsVersants.find(b => b.id === +bassinVersant);
@@ -387,6 +388,9 @@ export class DataService {
         tmp.departements.push({
           code: departement.code,
           niveauGravite: this.findMaxNiveauGravite(d.departements, departement.code),
+          niveauGraviteSup: this.findMaxNiveauGravite(d.departements, departement.code, 'SUP'),
+          niveauGraviteSou: this.findMaxNiveauGravite(d.departements, departement.code, 'SOU'),
+          niveauGraviteAep: this.findMaxNiveauGravite(d.departements, departement.code, 'AEP'),
         });
       });
       this.dataDepartement.push(tmp);
@@ -399,7 +403,7 @@ export class DataService {
     for (const sc of statisticsCommune) {
       this.dataCommune.push({
         code: sc.commune.code,
-        restrictions: sc.restrictionsByMonth.map(r => {
+        restrictions: sc.restrictionsByMonth?.map(r => {
           return {
             d: r.date,
             p: r.ponderation,
@@ -409,12 +413,15 @@ export class DataService {
     }
   }
 
-  findMaxNiveauGravite(restrictions: any[], departementCode: string) {
+  findMaxNiveauGravite(restrictions: any[], departementCode: string, zoneType?: string) {
     const restrictionsDepartement = restrictions.find(r => r.departement === departementCode);
     if (!restrictionsDepartement) {
       return null;
     }
-    const zonesType = ['SUP', 'SOU', 'AEP'];
+    let zonesType = ['SUP', 'SOU', 'AEP'];
+    if (zoneType) {
+      zonesType = zonesType.filter(z => z === zoneType);
+    }
     const niveauxGravite = ['crise', 'alerte_renforcee', 'alerte', 'vigilance'];
     for (const niveauGravite of niveauxGravite) {
       for (const zoneType of zonesType) {
