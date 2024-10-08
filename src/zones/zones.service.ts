@@ -79,6 +79,18 @@ export class ZonesService {
     );
   }
 
+  async findByDepartement(depCode: string) {
+    const zones = this.allZonesWithRestrictions.filter(zone => zone.departement === depCode);
+    if (zones.length > 0) {
+      return zones.map(z => this.formatZone(z));
+    }
+
+    throw new HttpException(
+      `Aucune zone d’alerte en vigueur sur ce département.`,
+      HttpStatus.NOT_FOUND,
+    );
+  }
+
   searchZonesByLonLat({ lon, lat }, allowMultiple = false) {
     const zones = this.zoneTree.search(lon, lat, lon, lat)
       .map(idx => this.zonesFeatures[idx])

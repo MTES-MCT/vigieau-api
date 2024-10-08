@@ -54,4 +54,15 @@ export class ZonesController {
   async findOne(@Param('id') id: string): Promise<any> {
     return this.zonesService.findOne(id);
   }
+
+  @Get('departement/:depCode')
+  @ApiOperation({ summary: 'Récupérer les zones d\'alerte d\'un département' })
+  @ApiResponse({
+    status: 201,
+    type: ZoneDto,
+  })
+  @ApiResponse({ status: 404, description: 'NOT FOUND' })
+  async findByDepartement(@Param('depCode') depCode: string): Promise<any> {
+    return this.zonesService.findByDepartement(depCode);
+  }
 }
