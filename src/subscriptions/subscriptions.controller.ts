@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, HttpCode, Param, Post, Req, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, Get, HttpCode, Ip, Param, Post, Req, UseGuards } from '@nestjs/common';
 import { SubscriptionsService } from './subscriptions.service';
 import { ApiExcludeController, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { CreateSubscriptionDto } from './dto/create_subscription.dto';
@@ -19,10 +19,11 @@ export class SubscriptionsController {
   async create(
     @Req() req,
     @Body() createSubscriptionsDto: CreateSubscriptionDto,
+    @Ip() ip: string
   ): Promise<SubscriptionDto> {
     return this.subscriptionsService.create(
       createSubscriptionsDto,
-      req,
+      ip,
     );
   }
 

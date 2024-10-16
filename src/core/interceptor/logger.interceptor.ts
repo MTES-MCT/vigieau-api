@@ -20,7 +20,7 @@ export class LoggerInterceptor implements NestInterceptor {
    */
   intercept(context: ExecutionContext, next: CallHandler): Observable<any> {
     const id = crypto.randomBytes(8).toString('hex');
-    const req = context.getArgByIndex(0);
+    const req = context.switchToHttp().getRequest();
     const body = { ...req.body };
     this._logger.log(
       `REQUEST - ${id} - ${req.ip} - ${req.session?.user?.email} - ${

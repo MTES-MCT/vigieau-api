@@ -46,23 +46,6 @@ export class ArreteCadre extends BaseEntity {
   // })
   // statut: StatutArreteCadre;
 
-  // @Column('enum', {
-  //   name: 'communeNiveauGraviteMax',
-  //   enum: ['all', 'aep', 'none'],
-  //   nullable: true,
-  // })
-  // communeNiveauGraviteMax: CommuneNiveauGraviteMax;
-
-  @Column({ nullable: true })
-  niveauGraviteSpecifiqueEap: boolean;
-
-  // @Column('enum', {
-  //   name: 'ressourceEapCommunique',
-  //   enum: ['esu', 'eso', 'max'],
-  //   nullable: true,
-  // })
-  // ressourceEapCommunique: RessourceEapCommunique;
-
   @ManyToMany(
     () => ArreteRestriction,
     (ArreteRestriction) => ArreteRestriction.arretesCadre,

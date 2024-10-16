@@ -34,9 +34,9 @@ export class SubscriptionsService {
     });
   }
 
-  async create(createSubscriptionDto: CreateSubscriptionDto, req: any): Promise<any> {
+  async create(createSubscriptionDto: CreateSubscriptionDto, ip: string): Promise<any> {
     const subscription = <any>createSubscriptionDto;
-    subscription.ip = req.ip;
+    subscription.ip = ip;
 
     if (subscription.commune) {
       const commune = this.communesService.getCommune(subscription.commune);
@@ -83,7 +83,7 @@ export class SubscriptionsService {
     } : {
       lon: subscription.lon,
       lat: subscription.lat,
-    }
+    };
     const subscriptionExists = await this.abonnementMailRepository.exists({
       where: whereClause,
     });
@@ -234,6 +234,7 @@ export class SubscriptionsService {
       erreur: 0,
       nouveau: 0,
       mail_envoye: 0,
+      departements: [],
     };
 
     const subscriptions = await this.abonnementMailRepository.find({
@@ -254,16 +255,19 @@ export class SubscriptionsService {
         if (subscription.typesEau.includes('AEP') && AEP && subscription.situation?.AEP !== AEP) {
           stats[AEP]++;
           situationUpdated = true;
+          this.addStatDepartement(stats.departements, subscription.commune);
         }
 
         if (subscription.typesEau.includes('SOU') && SOU && subscription.situation?.SOU !== SOU) {
           stats[SOU]++;
           situationUpdated = true;
+          this.addStatDepartement(stats.departements, subscription.commune);
         }
 
         if (subscription.typesEau.includes('SUP') && SUP && subscription.situation?.SUP !== SUP) {
           stats[SUP]++;
           situationUpdated = true;
+          this.addStatDepartement(stats.departements, subscription.commune);
         }
 
         if (situationUpdated) {
@@ -298,6 +302,14 @@ export class SubscriptionsService {
       }
     }
     await this.sendMattermostNotification(stats);
+  }
+
+  addStatDepartement(departements: string[], commune: string) {
+    const depCode = commune >= '97' ? commune.slice(0, 3) : commune.slice(0, 2);
+    if (departements.findIndex(d => d === depCode) >= 0) {
+      return;
+    }
+    departements.push(depCode);
   }
 
   async sendMattermostNotification(stats) {
@@ -336,6 +348,10 @@ export class SubscriptionsService {
 
     if (stats.erreur) {
       sentences.push(`- **${stats.erreur}** usagers sont en erreur 🧨`);
+    }
+
+    if (stats.departements?.length > 0) {
+      sentences.push(`- **${stats.departements.join(', ')}** départements concernés 🗺️`);
     }
 
     const message = sentences.join('\n');
