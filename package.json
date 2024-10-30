@@ -29,7 +29,7 @@
     "@nestjs/passport": "^10.0.3",
     "@nestjs/platform-express": "^10.3.10",
     "@nestjs/schedule": "^4.1.0",
-    "@nestjs/swagger": "^7.4.0",
+    "@nestjs/swagger": "^8.0.0",
     "@nestjs/throttler": "^6.1.0",
     "@nestjs/typeorm": "^10.0.2",
     "@turf/bbox": "^7.1.0",
