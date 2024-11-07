@@ -47,8 +47,8 @@ export class CreateSubscriptionDto {
   @Length(5)
   @IsOptional()
   @ApiProperty({
-    example: '69001',
-    description: 'Code postal de la commune',
+    example: '01001',
+    description: 'Code INSEE de la commune',
   })
   commune: string;
 
