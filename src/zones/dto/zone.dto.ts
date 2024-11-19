@@ -38,6 +38,9 @@ export class ZoneDto {
   })
   TypeZAS: string;
 
+  @ApiProperty({ example: true, description: "Cette ressource naturelle est-elle influencée / stockée ?" })
+  ressourceInfluencee: boolean;
+
   @ApiProperty({
     enum: ['vigilance', 'alerte', 'alerte_renforcee', 'crise'],
     example: 'alerte_renforcee',

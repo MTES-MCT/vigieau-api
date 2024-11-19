@@ -27,6 +27,9 @@ export class ZoneAlerteComputed extends BaseEntity {
   @Column({ nullable: false, length: 50 })
   type: 'SOU' | 'SUP' | 'AEP';
 
+  @Column({ default: false, nullable: false })
+  ressourceInfluencee: boolean;
+
   @Column({ default: false })
   enabled: boolean;
 

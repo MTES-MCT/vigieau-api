@@ -1,6 +1,6 @@
 import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { MoreThan, Repository } from 'typeorm';
+import { FindOneOptions, MoreThan, Repository } from 'typeorm';
 import computeBbox from '@turf/bbox';
 import { VigieauLogger } from '../logger/vigieau.logger';
 import booleanPointInPolygon from '@turf/boolean-point-in-polygon';
@@ -36,7 +36,7 @@ export class ZonesService {
               private readonly dataService: DataService,
               private readonly communesService: CommunesService,
               @InjectRepository(ArreteMunicipal)
-              private readonly arreteMunicipalRepository: Repository<ArreteMunicipal>,) {
+              private readonly arreteMunicipalRepository: Repository<ArreteMunicipal>) {
     this.loadAllZones(true);
   }
 
@@ -97,9 +97,9 @@ export class ZonesService {
       .filter(feature => booleanPointInPolygon([lon, lat], feature))
       .map(feature => this.zonesIndex[feature.properties.idZone]);
 
-    const sup = zones.filter(z => z.type === 'SUP');
-    const sou = zones.filter(z => z.type === 'SOU');
-    const aep = zones.filter(z => z.type === 'AEP');
+    const sup = zones.filter(z => !z.ressourceInfluencee && z.type === 'SUP');
+    const sou = zones.filter(z => !z.ressourceInfluencee && z.type === 'SOU');
+    const aep = zones.filter(z => !z.ressourceInfluencee && z.type === 'AEP');
 
     if (sup.length <= 1 && sou.length <= 1 && aep.length <= 1) {
       return zones;
@@ -122,9 +122,9 @@ export class ZonesService {
       return [];
     }
 
-    const sup = zones.filter(z => z.type === 'SUP');
-    const sou = zones.filter(z => z.type === 'SOU');
-    const aep = zones.filter(z => z.type === 'AEP');
+    const sup = zones.filter(z => !z.ressourceInfluencee && z.type === 'SUP');
+    const sou = zones.filter(z => !z.ressourceInfluencee && z.type === 'SOU');
+    const aep = zones.filter(z => !z.ressourceInfluencee && z.type === 'AEP');
 
     if (sup.length <= 1 && sou.length <= 1 && aep.length <= 1) {
       return zones;
@@ -154,6 +154,7 @@ export class ZonesService {
         .addSelect('zone_alerte_computed.code', 'code')
         .addSelect('zone_alerte_computed.nom', 'nom')
         .addSelect('zone_alerte_computed.type', 'type')
+        .addSelect('zone_alerte_computed.ressourceInfluencee', 'ressourceInfluencee')
         .addSelect('zone_alerte_computed.niveauGravite', 'niveauGravite')
         .addSelect(
           'ST_AsGeoJSON(ST_TRANSFORM(zone_alerte_computed.geom, 4326))',
@@ -168,7 +169,7 @@ export class ZonesService {
       for (let i = 0; i < zonesWithRestrictions.length; i += batchSize) {
         this.logger.log(`LOADING ALL ZONES & COMMUNES - MAPPING RESTRICTION - BATCH ${i}`);
         await Promise.all(zonesWithRestrictions.slice(i, i + batchSize).map(async (zone) => {
-          const z = await this.zoneAlerteComputedRepository.findOne({
+          const z = await this.zoneAlerteComputedRepository.findOne(<FindOneOptions>{
             where: {
               id: zone.id,
               restriction: {
@@ -229,6 +230,7 @@ export class ZonesService {
           code: z.code,
           nom: z.nom,
           type: z.type,
+          ressourceInfluencee: z.ressourceInfluencee,
           niveauGravite: z.niveauGravite,
           departement: z.restriction?.arreteRestriction?.departement?.code,
           arrete: {
@@ -282,6 +284,7 @@ export class ZonesService {
           code: zone.code,
           nom: zone.nom,
           type: zone.type,
+          ressourceInfluencee: zone.ressourceInfluencee,
           niveauGravite: zone.niveauGravite,
         };
         const bbox = computeBbox(geojson);
@@ -327,15 +330,15 @@ export class ZonesService {
 
     const zonesFormated = zonesToReturn?.map(z => this.formatZone(z, profil, communeArreteMunicipal));
 
-    if(communeArreteMunicipal?.fichier?.url) {
+    if (communeArreteMunicipal?.fichier?.url) {
       const zonesTypes = ['AEP', 'SOU', 'SUP'];
       zonesTypes.forEach(zoneType => {
-        if(zonesFormated.findIndex(z => z.type === zoneType) < 0) {
+        if (zonesFormated.findIndex(z => z.type === zoneType) < 0) {
           zonesFormated.push({
             id: null,
             type: zoneType,
             arreteMunicipalCheminFichier: communeArreteMunicipal.fichier.url,
-          })
+          });
         }
       });
     }
