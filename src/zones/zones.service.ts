@@ -14,6 +14,7 @@ import { DataService } from '../data/data.service';
 import { ArreteMunicipal } from './entities/arrete_municipal.entity';
 import { CommunesService } from '../communes/communes.service';
 import { Commune } from './entities/commune.entity';
+import { Config } from './entities/config.entity';
 
 @Injectable()
 export class ZonesService {
@@ -36,7 +37,9 @@ export class ZonesService {
               private readonly dataService: DataService,
               private readonly communesService: CommunesService,
               @InjectRepository(ArreteMunicipal)
-              private readonly arreteMunicipalRepository: Repository<ArreteMunicipal>) {
+              private readonly arreteMunicipalRepository: Repository<ArreteMunicipal>,
+              @InjectRepository(Config)
+              private readonly configRepository: Repository<Config>) {
     this.loadAllZones(true);
   }
 
@@ -401,13 +404,10 @@ export class ZonesService {
     if (this.loading || !this.lastUpdate) {
       return;
     }
-    const count = await this.zoneAlerteComputedRepository
-      .createQueryBuilder('zone_alerte_computed')
+    const count = await this.configRepository
+      .createQueryBuilder('config')
       .where({
-        enabled: true,
-      })
-      .andWhere({
-        updatedAt: MoreThan(this.lastUpdate.toLocaleString('sv')),
+        computeZoneAlerteComputedDate: MoreThan(this.lastUpdate.toLocaleString('sv')),
       })
       .getCount();
     if (count > 0) {
