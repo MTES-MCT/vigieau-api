@@ -13,6 +13,7 @@ import { DataModule } from '../data/data.module';
 import { StatisticsModule } from '../statistics/statistics.module';
 import { ArreteMunicipal } from './entities/arrete_municipal.entity';
 import { CommunesModule } from '../communes/communes.module';
+import { Config } from './entities/config.entity';
 
 @Module({
   imports: [
@@ -23,7 +24,8 @@ import { CommunesModule } from '../communes/communes.module';
       Thematique,
       ArreteCadre,
       Fichier,
-      ArreteMunicipal
+      ArreteMunicipal,
+      Config
     ]),
     DepartementsModule,
     DataModule,

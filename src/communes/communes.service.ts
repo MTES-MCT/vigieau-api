@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { FindOneOptions, Repository } from 'typeorm';
 import { VigieauLogger } from '../logger/vigieau.logger';
 import { Commune } from '../zones/entities/commune.entity';
 import { keyBy } from 'lodash';
@@ -34,7 +34,7 @@ export class CommunesService {
 
   async findArretesMunicipaux() {
     this.logger.log('LOADING COMMUNES ARRETES MUNICIPAUX');
-    return this.communeRepository.find({
+    return this.communeRepository.find(<FindOneOptions<Commune>>{
       select: {
         code: true,
         arretesMunicipaux: {
