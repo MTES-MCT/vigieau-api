@@ -19,11 +19,13 @@ export class SubscriptionsController {
   async create(
     @Req() req,
     @Body() createSubscriptionsDto: CreateSubscriptionDto,
-    @Ip() ip: string
   ): Promise<SubscriptionDto> {
+    const ips = req.headers['x-forwarded-for'] as string
+    const userIp = ips?.split(",")[0]
+
     return this.subscriptionsService.create(
       createSubscriptionsDto,
-      ip,
+      userIp,
     );
   }
 

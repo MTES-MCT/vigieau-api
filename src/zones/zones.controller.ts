@@ -1,7 +1,7 @@
-import { Controller, Get, Param, Query } from '@nestjs/common';
+import { Controller, Get, Param, ParseIntPipe, Query } from '@nestjs/common';
 import { ZonesService } from './zones.service';
 import { ApiOperation, ApiQuery, ApiResponse } from '@nestjs/swagger';
-import { ZoneDto } from './dto/zone.dto';
+import { FindZonesQueryDto, ZoneDto } from './dto/zone.dto';
 
 @Controller('zones')
 export class ZonesController {
@@ -34,14 +34,8 @@ export class ZonesController {
     required: false,
   })
   @ApiQuery({ name: 'zoneType', description: 'Type de zone (optionnel)', enum: ['AEP', 'SUP', 'SOU'], required: false })
-  async findAll(
-    @Query('lon') lon?: string,
-    @Query('lat') lat?: string,
-    @Query('commune') commune?: string,
-    @Query('profil') profil?: string,
-    @Query('zoneType') zoneType?: string,
-  ): Promise<any> {
-    return this.zonesService.find(lon, lat, commune, profil, zoneType);
+  async findAll(@Query() query: FindZonesQueryDto): Promise<any[]> {
+    return this.zonesService.find(query.lon, query.lat, query.commune, query.profil, query.zoneType);
   }
 
   @Get(':id')
@@ -51,7 +45,7 @@ export class ZonesController {
     type: ZoneDto,
   })
   @ApiResponse({ status: 404, description: 'NOT FOUND' })
-  async findOne(@Param('id') id: string): Promise<any> {
+  async findOne(@Param('id', ParseIntPipe) id: number): Promise<any> {
     return this.zonesService.findOne(id);
   }
 

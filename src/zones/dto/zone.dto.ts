@@ -1,6 +1,7 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { ArreteDto } from './arrete.dto';
 import { UsageDto } from './usage.dto';
+import { IsLatitude, IsLongitude, IsOptional, IsString } from 'class-validator';
 
 export class ZoneDto {
   @ApiProperty({ example: 1, description: 'Id de la zone d\'alerte' })
@@ -59,4 +60,26 @@ export class ZoneDto {
 
   @ApiProperty({ type: [UsageDto] })
   usages: UsageDto[];
+}
+
+export class FindZonesQueryDto {
+  @IsOptional()
+  @IsLongitude()
+  lon?: string;
+
+  @IsOptional()
+  @IsLatitude()
+  lat?: string;
+
+  @IsOptional()
+  @IsString()
+  commune?: string;
+
+  @IsOptional()
+  @IsString()
+  profil?: string;
+
+  @IsOptional()
+  @IsString()
+  zoneType?: string;
 }

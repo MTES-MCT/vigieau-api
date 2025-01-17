@@ -1,6 +1,6 @@
 import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { FindOneOptions, Repository } from 'typeorm';
 import { Usage } from '../zones/entities/usage.entity';
 import { UsageFeedback } from './entities/usage_feedback.entity';
 
@@ -12,50 +12,44 @@ export class UsageService {
               private readonly usageFeedbackRepository: Repository<UsageFeedback>) {
   }
 
-  async feedback(usageId: number, feedback: string) {
-    const usage = await this.usageRepository.findOne({
+  /**
+   * Enregistre un feedback pour un usage donné.
+   * @param usageId Identifiant de l'usage.
+   * @param feedback Commentaire de l'utilisateur.
+   * @returns Le feedback enregistré.
+   * @throws HttpException Si l'usage n'est pas trouvé.
+   */
+  async feedback(usageId: number, feedback?: string): Promise<UsageFeedback> {
+    const usage = await this.usageRepository.findOne(<FindOneOptions>{
       select: {
         id: true,
         nom: true,
-        thematique: {
-          id: true,
-          nom: true,
-        },
+        thematique: { id: true, nom: true },
         descriptionVigilance: true,
         descriptionAlerte: true,
         descriptionAlerteRenforcee: true,
         descriptionCrise: true,
-        restriction: {
-          niveauGravite: true,
-          arreteRestriction: {
-            id: true,
-          },
-        },
+        restriction: { niveauGravite: true, arreteRestriction: { id: true } },
       },
       relations: ['thematique', 'restriction', 'restriction.arreteRestriction'],
       where: { id: usageId },
     });
+
     if (!usage) {
       throw new HttpException(
         `Usage non trouvé.`,
         HttpStatus.NOT_FOUND,
       );
     }
-    let description;
-    switch (usage.restriction.niveauGravite) {
-      case 'vigilance':
-        description = usage.descriptionVigilance;
-        break;
-      case 'alerte':
-        description = usage.descriptionAlerte;
-        break;
-      case 'alerte_renforcee':
-        description = usage.descriptionAlerteRenforcee;
-        break;
-      case 'crise':
-        description = usage.descriptionCrise;
-        break;
-    }
+
+    const descriptionMap = {
+      vigilance: usage.descriptionVigilance,
+      alerte: usage.descriptionAlerte,
+      alerte_renforcee: usage.descriptionAlerteRenforcee,
+      crise: usage.descriptionCrise,
+    };
+    const description = descriptionMap[usage.restriction.niveauGravite] || null;
+
     const usageFeedback = {
       usageNom: usage.nom,
       usageThematique: usage.thematique.nom,

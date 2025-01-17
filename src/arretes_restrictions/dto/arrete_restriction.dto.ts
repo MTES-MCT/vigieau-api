@@ -1,5 +1,6 @@
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { DepartementDto } from '../../departements/dto/departement.dto';
+import { IsDateString, IsOptional, IsString } from 'class-validator';
 
 class FichierDto {
   @ApiProperty({ example: 'fichier.pdf', description: `Nom du fichier` })
@@ -34,7 +35,11 @@ export class ArreteRestrictionDto {
   @ApiProperty()
   fichier: FichierDto;
 
-  @ApiProperty({ example: 'ESO, ESU, AEP', description: `Types d'eaux concernées par l'arrêté de restriction` })
+  @ApiProperty({
+    example: ['ESO', 'ESU', 'AEP'],
+    description: `Types d'eaux concernées par l'arrêté de restriction`,
+    isArray: true,
+  })
   types: string[];
 
   @ApiProperty({
@@ -43,4 +48,35 @@ export class ArreteRestrictionDto {
     description: 'Niveau de gravité maximum en vigueur sur le département, null si pas de zone d\'alerte en vigueur',
   })
   niveauGraviteMax: string;
+}
+
+export class ArretesRestrictionsQueryDto {
+  @ApiPropertyOptional({
+    description: 'Date de recherche (YYYY-MM-DD), si non précisée c\'est la date du jour qui est prise en compte',
+    example: '2025-01-16',
+  })
+  @IsOptional()
+  @IsDateString({}, { message: 'La date doit être au format YYYY-MM-DD' })
+  date?: string;
+
+  @ApiPropertyOptional({
+    description: 'Bassin versant, si non précisée c\'est tout le territoire français qui est pris en compte',
+  })
+  @IsOptional()
+  @IsString()
+  bassinVersant?: string;
+
+  @ApiPropertyOptional({
+    description: 'Région, si non précisée c\'est tout le territoire français qui est pris en compte',
+  })
+  @IsOptional()
+  @IsString()
+  region?: string;
+
+  @ApiPropertyOptional({
+    description: 'Département, si non précisé c\'est tout le territoire français qui est pris en compte',
+  })
+  @IsOptional()
+  @IsString()
+  departement?: string;
 }

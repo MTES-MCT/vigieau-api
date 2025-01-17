@@ -1,8 +1,9 @@
-import { Body, Controller, Param, Post } from '@nestjs/common';
+import { Body, Controller, Param, ParseIntPipe, Post } from '@nestjs/common';
 import { ApiExcludeController, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { UsageService } from './usage.service';
 import { UsageDto } from '../zones/dto/usage.dto';
 import { UsageFeedbackDto } from './dto/usage_feedback.dto';
+import { UsageFeedback } from './entities/usage_feedback.entity';
 
 @Controller('usage')
 @ApiExcludeController()
@@ -16,8 +17,16 @@ export class UsageController {
     status: 201,
     type: UsageDto,
   })
-  async feedback(@Param('id') usageId: string,
-                 @Body() usageFeedback: UsageFeedbackDto): Promise<any> {
-    return this.usageService.feedback(+usageId, usageFeedback.feedback?.trim());
+  @ApiResponse({
+    status: 400,
+    description: 'Données invalides.',
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Usage non trouvé.',
+  })
+  async feedback(@Param('id', ParseIntPipe) usageId: number,
+                 @Body() usageFeedback: UsageFeedbackDto): Promise<UsageFeedback> {
+    return this.usageService.feedback(usageId, usageFeedback.feedback?.trim());
   }
 }

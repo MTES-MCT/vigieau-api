@@ -9,27 +9,38 @@ import { IsNull, MoreThanOrEqual, Not, Repository } from 'typeorm';
 import { Statistic } from './entities/statistic.entity';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { VigieauLogger } from '../logger/vigieau.logger';
+import { ConfigService } from '@nestjs/config';
 
 @Injectable()
 export class StatisticsService {
   private readonly logger = new VigieauLogger('StatisticsService');
 
-  statistics: any;
-  releaseDate = '2023-07-11';
+  private statistics: any = null;
+  private readonly releaseDate: string = '2023-07-11';
 
   constructor(@InjectRepository(Statistic)
               private readonly statisticRepository: Repository<Statistic>,
               private readonly httpService: HttpService,
               private readonly departementsService: DepartementsService,
               @Inject(forwardRef(() => SubscriptionsService))
-              private readonly subscriptionsService: SubscriptionsService) {
+              private readonly subscriptionsService: SubscriptionsService,
+              private readonly configService: ConfigService) {
   }
 
+  /**
+   * Renvoie les statistiques stockées en mémoire.
+   *
+   * @returns {any} Les statistiques agrégées.
+   */
   findAll() {
     return this.statistics;
   }
 
-  async loadStatistics() {
+  /**
+   * Charge les statistiques depuis la base de données pour les 30 derniers jours.
+   * Les données sont ensuite agrégées pour calculer les totaux.
+   */
+  async loadStatistics(): Promise<void> {
     const statistics = await this.statisticRepository.find({
       where: {
         date: MoreThanOrEqual(this.releaseDate),
@@ -38,53 +49,64 @@ export class StatisticsService {
         date: 'ASC',
       },
     });
-    const last30Days = statistics.slice(-30);
-    const statsToReturn = {
+
+    this.statistics = this.aggregateStatistics(statistics.slice(-30));
+  }
+
+  /**
+   * Agrège les statistiques pour calculer les totaux par profil, département et région.
+   *
+   * @param statistics - Liste des statistiques à agréger.
+   * @returns Les statistiques agrégées.
+   */
+  private aggregateStatistics(statistics: Statistic[]): any {
+    const aggregated = {
       subscriptions: 0,
       profileRepartition: {},
       departementRepartition: {},
       regionRepartition: {},
       statsByDay: [],
     };
-    for (const stat of last30Days) {
-      for (const [profile, value] of Object.entries(stat.profileRepartition)) {
-        statsToReturn.profileRepartition[profile] = statsToReturn.profileRepartition[profile]
-          ? statsToReturn.profileRepartition[profile] + value
-          : value;
-      }
 
-      for (const [departement, value] of Object.entries(stat.departementRepartition)) {
-        statsToReturn.departementRepartition[departement] = statsToReturn.departementRepartition[departement]
-          ? statsToReturn.departementRepartition[departement] + value
-          : value;
-      }
-
-      for (const [region, value] of Object.entries(stat.regionRepartition)) {
-        statsToReturn.regionRepartition[region] = statsToReturn.regionRepartition[region]
-          ? statsToReturn.regionRepartition[region] + value
-          : value;
-      }
+    for (const stat of statistics) {
+      this.incrementRepartition(aggregated.profileRepartition, stat.profileRepartition);
+      this.incrementRepartition(aggregated.departementRepartition, stat.departementRepartition);
+      this.incrementRepartition(aggregated.regionRepartition, stat.regionRepartition);
     }
 
-    statsToReturn.subscriptions = statistics.reduce((accumulator, object) => accumulator + object.subscriptions, 0);
+    aggregated.subscriptions = statistics.reduce((acc, s) => acc + s.subscriptions, 0);
 
-    statsToReturn.statsByDay = statistics.map(s => {
-      const statsLight: any = {};
-      statsLight.date = s.date;
-      statsLight.visits = s.visits;
-      statsLight.arreteDownloads = s.arreteDownloads;
-      statsLight.restrictionsSearch = s.restrictionsSearch;
-      return statsLight;
-    });
+    aggregated.statsByDay = statistics.map(s => ({
+      date: s.date,
+      visits: s.visits,
+      arreteDownloads: s.arreteDownloads,
+      restrictionsSearch: s.restrictionsSearch,
+    }));
 
-    this.statistics = statsToReturn;
+    return aggregated;
   }
 
+  /**
+   * Incrémente les valeurs d'une répartition avec celles d'une source.
+   *
+   * @param target - Répartition cible à incrémenter.
+   * @param source - Répartition source contenant les valeurs à ajouter.
+   */
+  private incrementRepartition(target: Record<string, number>, source: Record<string, number>): void {
+    for (const [key, value] of Object.entries(source || {})) {
+      target[key] = (target[key] || 0) + value;
+    }
+  }
+
+  /**
+   * Tâche cron exécutée toutes les 3 heures pour calculer les statistiques
+   * à partir des données collectées via les API Matomo.
+   */
   @Cron(CronExpression.EVERY_3_HOURS)
-  async computeStatistics() {
+  async computeStatistics(): Promise<void> {
     this.logger.log('COMPUTE STATISTICS');
-    const matomoUrl = `${process.env.MATOMO_URL}/?module=API&token_auth=${process.env.MATOMO_API_KEY}&format=JSON&idSite=${process.env.MATOMO_ID_SITE}&period=day`;
-    const oldMatomoUrl = `${process.env.OLD_MATOMO_URL}/?module=API&token_auth=${process.env.OLD_MATOMO_API_KEY}&format=JSON&idSite=${process.env.OLD_MATOMO_ID_SITE}&period=day`;
+    const matomoUrl = `${this.configService.get('MATOMO_URL')}/?module=API&token_auth=${this.configService.get('MATOMO_API_KEY')}&format=JSON&idSite=${this.configService.get('MATOMO_ID_SITE')}&period=day`;
+    const oldMatomoUrl = `${this.configService.get('OLD_MATOMO_URL')}/?module=API&token_auth=${this.configService.get('OLD_MATOMO_API_KEY')}&format=JSON&idSite=${this.configService.get('OLD_MATOMO_ID_SITE')}&period=day`;
     const lastStat = await this.statisticRepository.findOne({
       where: { id: Not(IsNull()) },
       order: { date: 'DESC' },
@@ -228,11 +250,13 @@ export class StatisticsService {
     this.loadStatistics();
   }
 
+  /**
+   * Génère une chaîne de caractères représentant une date au format `YYYY-MM-DD`.
+   *
+   * @param date - La date à formater.
+   * @returns Une chaîne de caractères formatée.
+   */
   generateDateString(date) {
-    const year = date.toLocaleString('default', { year: 'numeric' });
-    const month = date.toLocaleString('default', { month: '2-digit' });
-    const day = date.toLocaleString('default', { day: '2-digit' });
-
-    return [year, month, day].join('-');
+    return date.toISOString().split('T')[0];
   }
 }

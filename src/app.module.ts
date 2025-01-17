@@ -7,7 +7,7 @@ import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
 import { LoggerInterceptor } from './core/interceptor/logger.interceptor';
 import { DataSource } from 'typeorm';
-import { TypeOrmModule } from '@nestjs/typeorm';
+import { TypeOrmModule, TypeOrmModuleAsyncOptions } from '@nestjs/typeorm';
 import { ZonesModule } from './zones/zones.module';
 import { DepartementsModule } from './departements/departements.module';
 import { ScheduleModule } from '@nestjs/schedule';
@@ -23,7 +23,7 @@ import { DataModule } from './data/data.module';
     ConfigModule.forRoot({
       isGlobal: true,
     }),
-    TypeOrmModule.forRootAsync({
+    TypeOrmModule.forRootAsync(<TypeOrmModuleAsyncOptions> {
       useFactory: () => ({
         type: 'postgres',
         url: `postgres://${process.env.DATABASE_USER}:${
