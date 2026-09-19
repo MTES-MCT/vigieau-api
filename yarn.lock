@@ -918,9 +918,9 @@
     tslib "2.8.1"
 
 "@nestjs/throttler@^6.1.0":
-  version "6.3.0"
-  resolved "https://registry.yarnpkg.com/@nestjs/throttler/-/throttler-6.3.0.tgz#30e03a49732ea3059dfb36e3068bb31941a29062"
-  integrity sha512-IqTMbl5Iyxjts7NwbVriDND0Cnr8rwNqAPpF5HJE+UV+2VrVUBwCfDXKEiXu47vzzaQLlWPYegBsGO9OXxa+oQ==
+  version "6.7.0"
+  resolved "https://registry.yarnpkg.com/@nestjs/throttler/-/throttler-6.7.0.tgz#ccfdb03c32ab30d3b59be4ed3c08f5103890a3bf"
+  integrity sha512-+trKbv/9w8e8kZNVHF8X+q2LdpbYwKa8+PcUsZ4kUIJo2TOeS7CsNPvkwd7tOFrog8sbGrBBxWyp1roZJYbF6w==
 
 "@nestjs/typeorm@^10.0.2":
   version "10.0.2"
